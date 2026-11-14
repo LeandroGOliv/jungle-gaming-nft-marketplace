@@ -81,7 +81,7 @@ Violations are 🔴 unless explicitly justified in the code.
 - `src/lib/` stays generic; domain logic belongs to the owning feature's
   `rules/`.
 - No logic duplicated from an existing `rules/` or `src/lib/` helper.
-- Comments explain *why*; flag comments narrating *what*.
+- Comments explain _why_; flag comments narrating _what_.
 
 ### Test presence
 
@@ -113,6 +113,6 @@ Name it in one line and defer:
 
 - Effects, deps, cleanup, memoization, re-renders → **react-reviewer**.
 - Query keys/invalidation/optimistic updates, idempotency, socket handling,
-  mock *behaviour* → **data-sync-reviewer**.
+  mock _behaviour_ → **data-sync-reviewer**.
 - Figma fidelity, responsiveness, accessibility → **ui-fidelity-reviewer**.
 - Issue scope → **issue-coverage-reviewer**.

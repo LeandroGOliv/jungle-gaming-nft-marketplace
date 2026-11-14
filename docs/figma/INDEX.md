@@ -9,23 +9,23 @@ the child nodes before fetching anything.
 Desktop frames are 1440 wide with a 1200 content column (120 px gutters).
 Mobile frames are 414 × 896.
 
-| Screen | Viewport | Node | Size | Top-level sections | Spec | Screenshot |
-| --- | --- | --- | --- | --- | --- | --- |
-| Início | desktop | `2:2` | 1440 × 3668 | Top `70353:242`, Products `70342:2831`, Promos `70353:241`, Blog `70343:253`, Footer `70492:696` | — | — |
-| Detalhes do NFT | desktop | `10:244` | 1440 × 2246 | Top `70342:2770`, Description `70342:2780`, Related Products `70364:239`, Footer | — | — |
-| Carrinho de NFTs | desktop | `11:1278` | 1440 × 1754 | Top `70371:250`, Related Products `70371:239`, Footer | — | — |
-| Pagamento | desktop | `11:2862` | 1440 × 1657 | Checkout Page `70522:3321`, Footer | — | — |
-| Confirmação de Pedido | desktop | `11:4385` | 1440 × 1657 | Order Confirmation Modal `70376:239` (578 × 821) over the checkout page | — | — |
-| Login | desktop | `9:115` | 1440 × 1981 | Sign In Modal `70381:239` (500 × 600) over the marketplace page | — | — |
-| Cadastro | desktop | `9:1022` | 1440 × 1981 | Sign Up Modal `70383:239` (500 × 656) over the marketplace page | — | — |
-| Perfil do Colecionador | desktop | `9:1238` | 1440 × 1080 | Top `70386:264` | — | — |
-| Carteiras | desktop | `9:1670` | 1440 × 1080 | Top `70390:267` | — | — |
-| Início | mobile | `14:5226` | 414 × 896 | Search Bar `70395:239`, Hero Banner `70395:240`, Tabs `70395:241`, Product Grid `70395:242`, Tab Bar `70395:245` | — | — |
-| Detalhes do NFT | mobile | `15:5536` | 414 × 896 | Hero `70396:241`, Details Sheet `70396:242`, Buy Bar `70396:245` | — | — |
-| Carrinho de NFTs | mobile | `16:360` | 414 × 896 | Content `70397:239`, Payment Summary `70397:245` | — | — |
-| Pagamento | mobile | `16:748` | 414 × 896 | Content `70398:239` | — | — |
-| Login | mobile | `16:1022` | 414 × 896 | Logo, Title, Form `70399:241`, Sign In Button, Mobile Social Block, Signup Link | — | — |
-| Cadastro | mobile | `16:1228` | 414 × 896 | Logo, Title, Form `70399:250`, Create Profile Button, Mobile Social Block, Login Link | — | — |
+| Screen                 | Viewport | Node      | Size        | Top-level sections                                                                                               | Spec | Screenshot |
+| ---------------------- | -------- | --------- | ----------- | ---------------------------------------------------------------------------------------------------------------- | ---- | ---------- |
+| Início                 | desktop  | `2:2`     | 1440 × 3668 | Top `70353:242`, Products `70342:2831`, Promos `70353:241`, Blog `70343:253`, Footer `70492:696`                 | —    | —          |
+| Detalhes do NFT        | desktop  | `10:244`  | 1440 × 2246 | Top `70342:2770`, Description `70342:2780`, Related Products `70364:239`, Footer                                 | —    | —          |
+| Carrinho de NFTs       | desktop  | `11:1278` | 1440 × 1754 | Top `70371:250`, Related Products `70371:239`, Footer                                                            | —    | —          |
+| Pagamento              | desktop  | `11:2862` | 1440 × 1657 | Checkout Page `70522:3321`, Footer                                                                               | —    | —          |
+| Confirmação de Pedido  | desktop  | `11:4385` | 1440 × 1657 | Order Confirmation Modal `70376:239` (578 × 821) over the checkout page                                          | —    | —          |
+| Login                  | desktop  | `9:115`   | 1440 × 1981 | Sign In Modal `70381:239` (500 × 600) over the marketplace page                                                  | —    | —          |
+| Cadastro               | desktop  | `9:1022`  | 1440 × 1981 | Sign Up Modal `70383:239` (500 × 656) over the marketplace page                                                  | —    | —          |
+| Perfil do Colecionador | desktop  | `9:1238`  | 1440 × 1080 | Top `70386:264`                                                                                                  | —    | —          |
+| Carteiras              | desktop  | `9:1670`  | 1440 × 1080 | Top `70390:267`                                                                                                  | —    | —          |
+| Início                 | mobile   | `14:5226` | 414 × 896   | Search Bar `70395:239`, Hero Banner `70395:240`, Tabs `70395:241`, Product Grid `70395:242`, Tab Bar `70395:245` | —    | —          |
+| Detalhes do NFT        | mobile   | `15:5536` | 414 × 896   | Hero `70396:241`, Details Sheet `70396:242`, Buy Bar `70396:245`                                                 | —    | —          |
+| Carrinho de NFTs       | mobile   | `16:360`  | 414 × 896   | Content `70397:239`, Payment Summary `70397:245`                                                                 | —    | —          |
+| Pagamento              | mobile   | `16:748`  | 414 × 896   | Content `70398:239`                                                                                              | —    | —          |
+| Login                  | mobile   | `16:1022` | 414 × 896   | Logo, Title, Form `70399:241`, Sign In Button, Mobile Social Block, Signup Link                                  | —    | —          |
+| Cadastro               | mobile   | `16:1228` | 414 × 896   | Logo, Title, Form `70399:250`, Create Profile Button, Mobile Social Block, Login Link                            | —    | —          |
 
 No mobile frame exists for Confirmação de Pedido, Perfil do Colecionador and
 Carteiras — derive them from the desktop frames and the mobile component

@@ -35,9 +35,9 @@ If you are a sub-agent, write it yourself (go to Step 3).
 
 On the main thread:
 
-| Situation | Mode |
-| --- | --- |
-| The description is the only thing asked | **Inline** — Step 3 |
+| Situation                                                      | Mode                                                                  |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| The description is the only thing asked                        | **Inline** — Step 3                                                   |
 | Bundled with other work on the same diff (review, tests, docs) | **Dispatch** `pr-description-author` in the same message as that work |
 
 The handoff prompt carries what you already read, so the sub-agent re-derives
@@ -78,11 +78,13 @@ instruction text with real content:
    convention only when the PR changes it. One screen, ideally.
 4. **Refactor warning** — when a significant part of the diff is mechanical
    (renames, import reordering, barrels), add near the top of `## O que muda`:
+
    > ⚠️ **Parte deste PR contém refatorações mecânicas** em vários arquivos.
    > Lint e typecheck já cobrem essas mudanças — concentre a revisão nas
    > mudanças de lógica e comportamento.
 
    Entirely mechanical → callout at the very top, type `REFACTOR` only.
+
 5. **pt-BR prose**, identifiers in their original form.
 6. **`## Testes`** — the Playwright scenarios and unit tests added or changed,
    and what they prove. "N/A" only for a change with no code, said explicitly.

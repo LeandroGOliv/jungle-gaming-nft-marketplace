@@ -19,13 +19,13 @@ their findings into a single report. You do not review the code yourself.
 
 ## The reviewers you coordinate
 
-| Sub-agent | Owns |
-| --- | --- |
-| `frontend-code-quality-reviewer` | feature structure, contracts as the type source of truth, layering, Axios-only HTTP, RHF+Zod, routing groups, mock-free app code, test presence |
-| `react-reviewer` | React 19: unnecessary effects, deps/cleanup, leaks, re-render and derived state |
-| `data-sync-reviewer` | TanStack Query cache/keys/invalidation/optimistic updates, URL state, session isolation, idempotent orders, quote revalidation, ETH precision, Socket.IO events and reconciliation, MSW layer consistency |
-| `ui-fidelity-reviewer` | fidelity to the Figma, responsiveness at 390/768/1440, skeletons and view states, accessibility |
-| `issue-coverage-reviewer` | whether the diff satisfies the GitHub issue's scope and acceptance criteria |
+| Sub-agent                        | Owns                                                                                                                                                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `frontend-code-quality-reviewer` | feature structure, contracts as the type source of truth, layering, Axios-only HTTP, RHF+Zod, routing groups, mock-free app code, test presence                                                           |
+| `react-reviewer`                 | React 19: unnecessary effects, deps/cleanup, leaks, re-render and derived state                                                                                                                           |
+| `data-sync-reviewer`             | TanStack Query cache/keys/invalidation/optimistic updates, URL state, session isolation, idempotent orders, quote revalidation, ETH precision, Socket.IO events and reconciliation, MSW layer consistency |
+| `ui-fidelity-reviewer`           | fidelity to the Figma, responsiveness at 390/768/1440, skeletons and view states, accessibility                                                                                                           |
+| `issue-coverage-reviewer`        | whether the diff satisfies the GitHub issue's scope and acceptance criteria                                                                                                                               |
 
 ## Step 1 — Determine the scope
 
@@ -42,7 +42,7 @@ git diff origin/main...HEAD --name-only
 ## Step 2 — Full or quick?
 
 - **Full** (default) — the fan-out below.
-- **Quick** — only when the dev asked for a *revisão rápida / simples / leve*
+- **Quick** — only when the dev asked for a _revisão rápida / simples / leve_
   or wants to save tokens: dispatch `code-reviewer` alone with the resolved
   scope, deliver its report as-is, and skip Steps 3 to 6.
 

@@ -1,17 +1,113 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/roboto-mono';
 
-@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
-* {
-  box-sizing: border-box;
+/*
+ * Tokens do Figma (docs/figma/tokens.md). O layout tem um único tema, escuro,
+ * então as variáveis do shadcn/ui apontam direto para ele.
+ */
+:root {
+  --ink: #140d0a;
+  --surface-card: #241612;
+  --surface-dark: #38220f;
+  --border-strong: #3f2319;
+  --border-soft: #55321f;
+  --brand-primary: #d28a4c;
+  --brand-secondary: #b39463;
+  --text-primary: #f7f3ec;
+  --text-secondary: #cfb28c;
+  --text-accent: #e89b55;
+  --cream: #f5f1eb;
+  --elevated: #fbfbfb;
+
+  --background: var(--ink);
+  --foreground: var(--cream);
+  --card: var(--surface-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-card);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--ink);
+  --secondary: var(--surface-dark);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-card);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-dark);
+  --accent-foreground: var(--text-primary);
+  /* O Figma não define cor de erro; ajustar quando as telas forem detalhadas. */
+  --destructive: #e5484d;
+  --border: var(--border-strong);
+  --input: var(--border-soft);
+  --ring: var(--brand-primary);
+  --radius: 0.5rem;
+
+  color-scheme: dark;
 }
 
-html,
-body,
-#app {
-  min-height: 100%;
+@theme inline {
+  --font-sans: 'Roboto Mono Variable', ui-monospace, monospace;
+  --font-mono: 'Roboto Mono Variable', ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ink: var(--ink);
+  --color-surface-card: var(--surface-card);
+  --color-surface-dark: var(--surface-dark);
+  --color-border-soft: var(--border-soft);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-accent: var(--text-accent);
+  --color-elevated: var(--elevated);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
 }
 
-body {
-  margin: 0;
-}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}

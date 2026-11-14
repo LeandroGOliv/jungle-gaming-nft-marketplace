@@ -10,8 +10,10 @@ section before implementing or reviewing anything; when this file and
 `desafio.md` disagree, `desafio.md` wins. The Figma file defines the visuals —
 reach it through the `figma-design` skill.
 
-**Status:** fresh TanStack Router scaffold, no feature code yet. The
-architecture below is the intended target; refine it as real features land.
+**Status:** base structure in place (providers, Axios instance, query client,
+socket client, MSW worker, theme tokens, Playwright, Lighthouse script); no
+feature code yet. The architecture below is the intended target; refine it as
+real features land.
 
 ## Repo layout
 
@@ -94,6 +96,27 @@ handlers, fixtures, scenarios, socket simulation).
 - **Every data-dependent view** renders loading (shimmer skeleton with the
   final dimensions, honouring `prefers-reduced-motion`), empty, error with
   retry, success and background-refresh states.
+
+## Tooling gotchas
+
+- **`msw` stays on 2.x.** `@mswjs/socket.io-binding` only supports `msw ^2`;
+  upgrade the two together or not at all.
+- **Socket.IO uses the path `/realtime/`** (`env.socketPath`), matched in the
+  mocks by `ws.link('*/realtime/')`. MSW strips the default `/socket.io/`
+  prefix before matching, which would make the link collide with every other
+  WebSocket on the origin (Vite HMR included).
+- **The socket transport is WebSocket only** — the binding does not intercept
+  long-polling. It also has no rooms, namespaces or heartbeat; the heartbeat
+  lives in `src/mocks/realtime.ts`.
+- **`socket.io-client` must be imported after the MSW worker starts** — it is
+  reached only through `createSocket()` at runtime, never connected at module
+  load.
+- **`src/components/ui/` is shadcn CLI output** (`pnpm dlx shadcn@latest add
+<name>`): restyle through theme tokens and variants, keep the file shape.
+- **Playwright runs against the production build** (`vite preview`), so tests
+  cannot import from `src/`.
+- **New dependencies**: confirm the package is the official one (registry
+  repository and maintainers) and tell the user before installing.
 
 ## Design fidelity
 

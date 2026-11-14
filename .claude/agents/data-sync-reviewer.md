@@ -148,4 +148,4 @@ events), and the fix. End with a short verdict. Never mention `CLAUDE.md`.
   **frontend-code-quality-reviewer**.
 - Effect deps and listener cleanup mechanics → **react-reviewer**.
 - How loading/error states look → **ui-fidelity-reviewer** (you own whether
-  they are *reachable*).
+  they are _reachable_).

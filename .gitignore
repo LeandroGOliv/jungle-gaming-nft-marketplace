@@ -10,6 +10,10 @@ dist-ssr
 __unconfig*
 todos.json
 
+# Relatórios de teste e auditoria
+playwright-report
+test-results
+
 # Env / segredos (inclui o FIGMA_TOKEN)
 .env
 *.local
