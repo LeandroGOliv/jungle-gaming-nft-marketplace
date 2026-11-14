@@ -62,7 +62,7 @@ prerequisite. Then, per node:
 - `get_screenshot` — the reference image.
 - `get_variable_defs` — tokens bound to the node.
 
-The MCP returns React + Tailwind as a *reference*. Treat it as a spec to
+The MCP returns React + Tailwind as a _reference_. Treat it as a spec to
 translate into this project's shadcn primitives and theme tokens, not as code
 to paste.
 
