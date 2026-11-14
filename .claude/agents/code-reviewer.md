@@ -54,9 +54,8 @@ Eliminatory first — any hit is 🔴 and goes at the top of the report:
 
 Then:
 
-- Types come from the feature's `contracts/`; no duplicated entity types;
-  layering and barrel boundaries respected; HTTP only via `services/` + the
-  shared Axios instance.
+- Types come from `src/types/`; no duplicated entity types; HTTP only via
+  `services/` using `publicClientApi`/`clientApi`.
 - Query keys include every parameter; mutations invalidate what they change;
   query functions forward `signal`.
 - ETH values stay decimal strings — no `Number`/`parseFloat` arithmetic.
@@ -68,7 +67,7 @@ Then:
   visible focus.
 - No arbitrary Tailwind values where a theme token exists.
 - Unnecessary effects, missing effect cleanup.
-- A new flow without its Playwright scenario, or new `rules/` logic without a
+- A new flow without its Playwright scenario, or new `utils/` logic without a
   unit test, is 🔴.
 
 Skip what ESLint and the typechecker already enforce.

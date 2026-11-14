@@ -96,9 +96,12 @@ instead of printing them.
   once, named after the Figma variable/style. Components use the token
   utilities; an arbitrary value (`text-[13px]`, `bg-[#1a1a1a]`) is justified
   only when the design has a true one-off.
-- **Assets**: export images as the file provides them (SVG for icons/logos,
-  raster at 2x for art) into the app's `public/` or `src/assets/`, served
-  locally — no hotlinked Figma URLs, they expire. Fonts are self-hosted.
+- **Assets**: `download_assets` on a section frame returns up to 20 original
+  images and 20 SVGs per call — fetch by section, not by layer. Save them to
+  `public/images/` with kebab-case names taken from the layer
+  (`nft-artwork-03.png`), as provided: do not resize, convert or compress
+  unless the user asks. No hotlinked Figma URLs — they expire. Fonts are
+  self-hosted.
 - **Responsive**: desktop and mobile frames are both specs. Tablet (768) and
   screens without a mobile frame (profile, wallets, confirmation) are derived
   from the same components and spacing scale.

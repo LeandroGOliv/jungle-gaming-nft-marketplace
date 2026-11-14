@@ -117,7 +117,7 @@ between files, so trace it rather than reading hunks in isolation.
 
 - REST handlers and socket emissions read and write the **same** mock store: a
   data change shows up in both.
-- Handlers type their payloads with the app's `contracts/`.
+- Handlers type their payloads with the app's `src/types/`.
 - Scenarios (latency, out-of-order, offline, 4xx/5xx, expired session,
   sign-up conflict, invalid/expired coupon, price change, sold out, timeout
   after order creation, payment confirmed/refused) are selectable by

@@ -51,33 +51,35 @@ trade-off:
 
 ## Architecture conventions
 
-Code is organised by **feature** under `src/features/{feature}/`:
+The standard flat React layout, by technical role — no feature folders, no
+domain layers. Keep it shallow: a subfolder appears only to group a screen's
+components.
 
 ```
-src/features/cart/
-├── contracts/   # exact REST + socket event shapes — the single source of truth for types
-├── schemas/     # Zod form schemas
-├── services/    # Axios calls, one thin function per endpoint
-├── hooks/       # TanStack Query hooks (queries, mutations, query keys)
-├── rules/       # pure logic, no React/network (e.g. ETH decimal math)
+src/
 ├── components/
-└── index.ts     # the feature's public API (barrel)
+│   ├── ui/         # shadcn primitives, restyled to the Figma
+│   └── <area>/     # layout, catalog, cart, checkout, account, ...
+├── hooks/          # TanStack Query hooks (queries, mutations, query keys) and UI hooks
+├── services/       # Axios calls, one file per resource, one thin function per endpoint
+├── types/          # exact REST + socket event shapes — the single source of truth
+├── schemas/        # Zod form schemas
+├── utils/          # pure logic, no React/network (e.g. ETH decimal math), unit-tested
+├── lib/            # wiring: env, Axios clients, query client, socket client, cn()
+├── routes/         # file-based routes
+└── mocks/          # MSW handlers, fixtures, scenarios, socket simulation
 ```
 
-Outside `features/`: `src/components/ui/` (shadcn primitives, restyled to the
-Figma), `src/lib/` (generic helpers and the shared Axios instance, socket
-client, query client), `src/routes/` (file-based routes), `src/mocks/` (MSW
-handlers, fixtures, scenarios, socket simulation).
-
-- **Contracts are shared, never duplicated**: services, hooks, components and
-  the MSW handlers all import the same `contracts/` types. No mappers unless
-  the shape genuinely differs.
-- **Dependency direction**: `rules/` only `import type`s from `contracts/`;
-  `services/` never imports `rules/`; cross-feature imports go through the
-  target's `index.ts`.
-- **HTTP only through Axios**: components and hooks call the feature's
-  `services/`, which use the shared Axios instance. Query functions forward the
-  `signal` so stale requests are cancelled.
+- **Types are shared, never duplicated**: services, hooks, components and the
+  MSW handlers all import the same `types/`. No mappers unless the shape
+  genuinely differs.
+- **Two Axios clients** in `src/lib/http.ts`: `publicClientApi` for endpoints
+  that need no session (catalogue, login, sign-up) and `clientApi` for
+  authenticated ones — it attaches the session and owns the 401 handling
+  (clear session, redirect to login carrying the return location).
+- **HTTP only through `services/`**: components and hooks never call Axios
+  directly. Query functions forward the `signal` so stale requests are
+  cancelled.
 - **URL is state** for catalogue search, filters, sort and pagination:
   validated search params on the route, filter changes reset the page.
 - **Routing groups**: `_authenticated` (guard redirects to login carrying the
@@ -85,7 +87,7 @@ handlers, fixtures, scenarios, socket simulation).
 - **Forms**: `useForm` + `zodResolver`, fields through `<Controller>` into the
   shadcn primitives; API validation errors are mapped back onto the fields.
 - **Money**: ETH values are decimal **strings** end to end. Do arithmetic with
-  a decimal/bigint approach in `rules/` — never `Number`/`parseFloat`. The API
+  a decimal/bigint approach in `utils/` — never `Number`/`parseFloat`. The API
   quote is the reference for totals; the client displays, it does not decide.
 - **Orders**: one idempotency key per purchase attempt, reused across retries,
   timeouts and refresh.
@@ -135,7 +137,7 @@ visual-regression pages). A flow is done when its E2E scenario exists and
 passes. Each test starts from an isolated, reset mock state and controls
 clock, latency and event emission; assertions observe the UI.
 
-Pure `rules/` logic gets a co-located unit test written first.
+Pure `utils/` logic gets a co-located unit test written first.
 
 ## Development workflow
 

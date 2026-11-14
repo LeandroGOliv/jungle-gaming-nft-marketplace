@@ -2,8 +2,8 @@
 name: frontend-code-quality-reviewer
 description: >-
   Reviews React/TypeScript code against this repository's conventions and
-  code-quality bar — feature structure, contracts as the single source of
-  truth for types, services/rules layering, cross-feature import boundaries,
+  code-quality bar — the flat folder structure, shared types as the single
+  source of truth, the services layer and its two Axios clients,
   Axios-only HTTP, the RHF+Zod form pattern, routing groups, mock-free
   application code, and test presence. Use for "review the conventions", "is
   this following the project's patterns", "check code quality". It does NOT
@@ -38,17 +38,17 @@ Always read the full file around a change before commenting.
 
 Violations are 🔴 unless explicitly justified in the code.
 
-### Type architecture
+### Structure and types
 
-- `features/{feature}/contracts/` is the **single source of truth** for that
-  feature's REST and socket-event shapes. No duplicate entity type in a
-  component, hook, schema or MSW handler — they all import from `contracts/`.
-- No mappers: a service returns the contract type; transform only when the
-  shape genuinely differs.
-- `rules/` only `import type`s from its own `contracts/` — no runtime import
-  from `services/`, `hooks/` or `components/`.
-- `services/` never imports from `rules/`.
-- Cross-feature imports go through the target's `index.ts` barrel.
+- Files live in the folder for their role (`components/`, `hooks/`,
+  `services/`, `types/`, `schemas/`, `utils/`, `lib/`). Flag a new top-level
+  folder, a feature/domain folder, or nesting deeper than one grouping level.
+- `src/types/` is the **single source of truth** for REST and socket-event
+  shapes. No duplicate entity type in a component, hook, schema or MSW
+  handler — they all import from `types/`.
+- No mappers: a service returns the API type; transform only when the shape
+  genuinely differs.
+- `utils/` is pure: no React, no Axios, no query client.
 - A Zod schema's inferred type matches the contract's request type.
 - Real type-safety: no cast hiding a bug, no widening to `string` where a
   union exists, correct narrowing of API error shapes.
@@ -56,7 +56,9 @@ Violations are 🔴 unless explicitly justified in the code.
 ### HTTP and mocks boundary
 
 - No `axios`/`fetch` call from a component, hook or route — only from the
-  feature's `services/`, through the shared Axios instance.
+  `services/`, using `publicClientApi` for session-less endpoints and
+  `clientApi` for authenticated ones. Flag an authenticated call made through
+  `publicClientApi`, and auth/401 logic duplicated outside `clientApi`.
 - No fixture, hardcoded response, `if (mock)` branch or scenario knowledge
   outside `src/mocks/`. Application code must be identical with mocks on or
   off. This is an eliminatory criterion of the spec — flag it at the top.
@@ -65,7 +67,7 @@ Violations are 🔴 unless explicitly justified in the code.
 ### Forms
 
 - `useForm` + `zodResolver`, fields through `<Controller>` into the
-  `src/components/ui/` primitives. Schemas live in the feature's `schemas/`.
+  `src/components/ui/` primitives. Schemas live in `src/schemas/`.
 - Validation errors returned by the API are mapped onto the fields
   (`setError`), not only toasted.
 
@@ -78,14 +80,13 @@ Violations are 🔴 unless explicitly justified in the code.
 
 ### Structure and hygiene
 
-- `src/lib/` stays generic; domain logic belongs to the owning feature's
-  `rules/`.
-- No logic duplicated from an existing `rules/` or `src/lib/` helper.
+- `src/lib/` is wiring only; domain logic belongs in `utils/`.
+- No logic duplicated from an existing `utils/` or `src/lib/` helper.
 - Comments explain _why_; flag comments narrating _what_.
 
 ### Test presence
 
-- New or changed pure logic in `rules/` without a co-located unit test is 🔴.
+- New or changed pure logic in `utils/` without a co-located unit test is 🔴.
 - A new user-facing flow without a Playwright scenario covering it is 🔴 —
   name the scenario from the spec's test list it should satisfy. If the test
   runner is not installed yet, flag the missing tooling instead of accepting
