@@ -21,7 +21,7 @@ their findings into a single report. You do not review the code yourself.
 
 | Sub-agent                        | Owns                                                                                                                                                                                                      |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `frontend-code-quality-reviewer` | feature structure, contracts as the type source of truth, layering, Axios-only HTTP, RHF+Zod, routing groups, mock-free app code, test presence                                                           |
+| `frontend-code-quality-reviewer` | flat folder structure, shared types as the source of truth, the two Axios clients, Axios-only HTTP, RHF+Zod, routing groups, mock-free app code, test presence                                            |
 | `react-reviewer`                 | React 19: unnecessary effects, deps/cleanup, leaks, re-render and derived state                                                                                                                           |
 | `data-sync-reviewer`             | TanStack Query cache/keys/invalidation/optimistic updates, URL state, session isolation, idempotent orders, quote revalidation, ETH precision, Socket.IO events and reconciliation, MSW layer consistency |
 | `ui-fidelity-reviewer`           | fidelity to the Figma, responsiveness at 390/768/1440, skeletons and view states, accessibility                                                                                                           |
@@ -56,7 +56,7 @@ Select only the reviewers the diff warrants:
 - **`frontend-code-quality-reviewer`** — any `src/**/*.ts(x)` or `e2e/**` change.
 - **`react-reviewer`** — any `.tsx` component or `hooks/` change.
 - **`data-sync-reviewer`** — any change under `services/`, `hooks/`,
-  `contracts/`, `rules/`, `src/lib/`, `src/mocks/`, route files with
+  `types/`, `utils/`, `src/lib/`, `src/mocks/`, route files with
   loaders/search params/guards, or anything touching Query, Axios, the socket
   client, session, cart, quote or orders.
 - **`ui-fidelity-reviewer`** — any `.tsx` that renders UI, `src/components/ui/`,
