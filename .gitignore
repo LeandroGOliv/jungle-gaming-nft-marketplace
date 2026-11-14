@@ -1,0 +1,25 @@
+# Dependências e build
+node_modules
+dist
+dist-ssr
+.tanstack
+.nitro
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# Env / segredos (inclui o FIGMA_TOKEN)
+.env
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rascunhos locais de descrição de PR
+.code-reviews/
+
+# Configurações locais do Claude Code
+.claude/settings.local.json
