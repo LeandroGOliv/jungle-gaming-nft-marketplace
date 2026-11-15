@@ -1,6 +1,7 @@
 import { useMatch, useNavigate } from '@tanstack/react-router'
 import { useAnnounce } from '@/hooks/use-announce'
 import { useLogout } from '@/hooks/use-session'
+import { checkoutDraft } from '@/lib/checkout-draft'
 
 /**
  * Logout pela interface: encerra a sessão, avisa na região viva e, se a tela
@@ -22,6 +23,7 @@ export function useSignOut() {
       // A sessão local termina na hora; o aviso não espera a resposta da API
       // (e o callback do `mutate` não roda se a tela privada desmontar antes).
       logout.mutate()
+      checkoutDraft.clearAll()
       announce('Você saiu da sua conta.')
       if (inPrivateRoute) void navigate({ to: '/', replace: true })
     },

@@ -1,7 +1,11 @@
 import { compareEth, formatEth, isEthAmount } from '@/utils/eth'
 import type { CartLine } from '@/types/cart'
 import type { Nft } from '@/types/nft'
-import type { NftUpdatedData, RealtimeEnvelope } from '@/types/realtime'
+import type {
+  NftUpdatedData,
+  RealtimeEnvelope,
+  WalletDisconnectedData,
+} from '@/types/realtime'
 
 type NftEvent = RealtimeEnvelope<NftUpdatedData>
 
@@ -134,4 +138,25 @@ export function describeCartChanges(
     )
   }
   return messages
+}
+
+type WalletDisconnectedEvent = RealtimeEnvelope<WalletDisconnectedData>
+
+export function isWalletDisconnectedEvent(
+  value: unknown,
+): value is WalletDisconnectedEvent {
+  if (typeof value !== 'object' || value === null) return false
+  const event = value as {
+    eventId?: unknown
+    resource?: { type?: unknown; id?: unknown } | null
+    version?: unknown
+    data?: { reason?: unknown } | null
+  }
+  return (
+    typeof event.eventId === 'string' &&
+    event.resource?.type === 'wallet-connection' &&
+    typeof event.resource.id === 'string' &&
+    Number.isInteger(event.version) &&
+    typeof event.data?.reason === 'string'
+  )
 }
