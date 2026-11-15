@@ -1,7 +1,8 @@
 import type { PasswordCredential } from '../password'
 import type { CartRecord } from '../db'
 import type { Order } from '@/types/order'
-import type { User, Wallet } from '@/types/user'
+import type { User } from '@/types/user'
+import type { Wallet } from '@/types/wallet'
 
 export interface UserRecord extends User, PasswordCredential {}
 
@@ -38,17 +39,28 @@ export const userFixtures: Array<UserRecord> = [
   },
 ]
 
-// Nova reproduz o Figma: só a carteira principal, na Polygon, com ENS.
+/**
+ * Códigos de indicação aceitos pela API simulada. Qualquer outro responde 422
+ * no campo, para exercitar um erro de validação que só o servidor conhece.
+ */
+export const referralCodeFixtures = ['KURIO2026', 'GREENMINT', 'SELVA10']
+
+// Nova tem só a principal (a secundária fica para cadastrar); Rafael, as duas.
 export const walletFixtures: Record<string, Array<Wallet>> = {
   usr_nova: [
     {
       id: 'wal_nova_primary',
       slot: 'primary',
-      provider: 'metamask',
+      displayName: 'Nova Sato',
       alias: 'Carteira principal',
-      address: '0xA91F3c6B2d8E4a7F0b19C5e3D62f8A4b7c1DE82C',
       network: 'polygon',
-      ensName: 'nova.kurio',
+      profileName: 'novasato',
+      address: '0xA91F3c6B2d8E4a7F0b19C5e3D62f8A4b7c1DE82C',
+      secondaryAddress: null,
+      provider: 'metamask',
+      referralCode: 'KURIO2026',
+      email: 'nova@colecionador.test',
+      ensName: 'nova',
       updatedAt: '2026-02-11T14:25:00.000Z',
     },
   ],
@@ -56,21 +68,31 @@ export const walletFixtures: Record<string, Array<Wallet>> = {
     {
       id: 'wal_rafael_primary',
       slot: 'primary',
-      provider: 'coinbase',
+      displayName: 'Rafael Lima',
       alias: 'Coinbase do dia a dia',
-      address: '0x4D2e8B7a1C9f03E6b5A47d2C8e1F9a0B3c6D7E15',
       network: 'ethereum',
-      ensName: null,
+      profileName: 'rafalima',
+      address: '0x4D2e8B7a1C9f03E6b5A47d2C8e1F9a0B3c6D7E15',
+      secondaryAddress: null,
+      provider: 'coinbase',
+      referralCode: 'SELVA10',
+      email: 'rafael@colecionador.test',
+      ensName: 'rafalima',
       updatedAt: '2026-04-03T09:10:00.000Z',
     },
     {
       id: 'wal_rafael_secondary',
       slot: 'secondary',
-      provider: 'walletconnect',
+      displayName: 'Rafael Lima',
       alias: 'Cofre',
-      address: '0x8B1c5F3e7A2d9C04e6B8a1D3f5C7e9A2b4D6F890',
       network: 'polygon',
-      ensName: null,
+      profileName: 'rafalima',
+      address: '0x8B1c5F3e7A2d9C04e6B8a1D3f5C7e9A2b4D6F890',
+      secondaryAddress: 'rafalima.eth',
+      provider: 'walletconnect',
+      referralCode: 'SELVA10',
+      email: 'rafael@colecionador.test',
+      ensName: 'rafacofre',
       updatedAt: '2026-04-05T18:40:00.000Z',
     },
   ],
