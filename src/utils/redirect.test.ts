@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { safeRedirect } from './redirect'
+import { returnAfterLogin, safeRedirect } from './redirect'
 
 const ORIGIN = 'https://marketplace.example'
 
@@ -25,5 +25,37 @@ describe('safeRedirect', () => {
     ['javascript:alert(1)', 'esquema javascript'],
   ])('rejeita %j (%s)', (value) => {
     expect(safeRedirect(value, ORIGIN)).toBeUndefined()
+  })
+})
+
+describe('returnAfterLogin', () => {
+  it('segue o retorno quando quem entra é quem estava na tela', () => {
+    expect(
+      returnAfterLogin({
+        redirect: '/perfil',
+        previousUserId: 'usr_nova',
+        userId: 'usr_nova',
+      }),
+    ).toBe('/perfil')
+  })
+
+  it('leva outro usuário à Início', () => {
+    expect(
+      returnAfterLogin({
+        redirect: '/pagamento?pedido=ord_0001',
+        previousUserId: 'usr_nova',
+        userId: 'usr_rafael',
+      }),
+    ).toBe('/')
+  })
+
+  it('segue o retorno pedido por um visitante', () => {
+    expect(
+      returnAfterLogin({
+        redirect: '/carteiras',
+        previousUserId: null,
+        userId: 'usr_rafael',
+      }),
+    ).toBe('/carteiras')
   })
 })

@@ -130,6 +130,10 @@ test.describe('detalhe do NFT', () => {
 
     await favoriteButton(page).click()
     await expect(favoriteButton(page)).toHaveAttribute('aria-pressed', 'false')
+    // O otimista muda o botão antes da resposta: recarrega só após a confirmação.
+    await expect(
+      page.getByText('Violet Nomad #314 removido dos favoritos.'),
+    ).toBeAttached()
     await page.reload()
     await expect(favoriteButton(page)).toHaveAttribute('aria-pressed', 'false')
   })

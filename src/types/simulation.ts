@@ -148,6 +148,12 @@ export interface MockControlApi {
   updateNft: (id: string, patch: NftPatch) => void
   /** Emite um evento cru, para duplicatas e eventos antigos. */
   emit: (event: RealtimeEventName, payload: unknown) => void
+  /** Evento cru só para as conexões do usuário, como os eventos privados. */
+  emitToUser: (
+    userId: string,
+    event: RealtimeEventName,
+    payload: unknown,
+  ) => void
   /** Vence todas as sessões abertas: a próxima chamada autenticada recebe 401. */
   expireSessions: () => void
   /** Encerra as conexões de carteira abertas e emite `wallet.disconnected` ao dono. */

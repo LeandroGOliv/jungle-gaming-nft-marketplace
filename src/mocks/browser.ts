@@ -55,6 +55,10 @@ export async function enableMocking() {
     socketPath: env.socketPath,
   })
   applyUrlParams(runtime)
+  // O evento só chega às outras abas: cada uma tem seu worker e seu store.
+  window.addEventListener('storage', (event) =>
+    runtime.syncFromStorage(event.key),
+  )
 
   const worker = setupWorker(...createHandlers(env.apiUrl, runtime))
   await worker.start({

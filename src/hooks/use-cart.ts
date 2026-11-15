@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import {
   keepPreviousData,
   useMutation,
@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { useAnnounce } from '@/hooks/use-announce'
-import { useSession, userKeys } from '@/hooks/use-session'
+import { isCurrentSession, useSession, userKeys } from '@/hooks/use-session'
 import { guestCartId } from '@/lib/guest-cart'
 import {
   describeRequestError,
@@ -23,12 +23,13 @@ import {
   removeCoupon,
   updateCartItem,
 } from '@/services/cart'
+import type { CartActor } from '@/services/cart'
 import type { QueryClient } from '@tanstack/react-query'
 import type { AddCartItemRequest, Cart } from '@/types/cart'
 
 type CartOwner =
   | { kind: 'pending' }
-  | { kind: 'user'; userId: string }
+  | { kind: 'user'; userId: string; token: string }
   | { kind: 'guest'; guestCartId: string | null }
 
 /**
@@ -38,6 +39,17 @@ type CartOwner =
 export const cartKeys = {
   user: (userId: string) => [...userKeys.detail(userId), 'cart'] as const,
   guest: (id: string | null) => ['cart', 'guest', id ?? 'none'] as const,
+}
+
+/**
+ * Quem a API atende: a sessão dona da chave, nunca a corrente no envio. Com a
+ * sessão ainda sem resposta, não há dono, e a chamada não sai.
+ */
+function actorOf(owner: CartOwner): CartActor {
+  if (owner.kind === 'pending') throw new Error('Sessão ainda não resolvida.')
+  return owner.kind === 'user'
+    ? { token: owner.token }
+    : { guestCartId: owner.guestCartId }
 }
 
 function ownerKey(owner: Exclude<CartOwner, { kind: 'pending' }>) {
@@ -55,7 +67,7 @@ function useCartOwner(): CartOwner {
   const guestId = useGuestCartId()
   if (session.status === 'pending') return { kind: 'pending' }
   if (session.status === 'authenticated') {
-    return { kind: 'user', userId: session.user.id }
+    return { kind: 'user', userId: session.user.id, token: session.token }
   }
   return { kind: 'guest', guestCartId: guestId }
 }
@@ -75,12 +87,12 @@ export function useCartKey() {
 function fetchCart(owner: CartOwner, signal: AbortSignal) {
   const pendingGuest = guestCartId.get()
   if (owner.kind === 'user' && pendingGuest) {
-    return mergeGuestCart(pendingGuest, signal).then((merged) => {
+    return mergeGuestCart(owner.token, pendingGuest, signal).then((merged) => {
       guestCartId.clear()
       return merged
     })
   }
-  return getCart(owner.kind === 'guest' ? owner.guestCartId : null, signal)
+  return getCart(actorOf(owner), signal)
 }
 
 const quoteKey = (owner: CartOwner, version: number) => [
@@ -107,9 +119,11 @@ export function useCart() {
 export function useCartQuote(cart: Cart | undefined, owner: CartOwner) {
   return useQuery({
     queryKey: quoteKey(owner, cart?.version ?? 0),
-    queryFn: ({ signal }) =>
-      getCartQuote(owner.kind === 'guest' ? owner.guestCartId : null, signal),
-    enabled: cart !== undefined && cart.items.length > 0,
+    queryFn: ({ signal }) => {
+      return getCartQuote(actorOf(owner), signal)
+    },
+    enabled:
+      owner.kind !== 'pending' && cart !== undefined && cart.items.length > 0,
     placeholderData: keepPreviousData,
   })
 }
@@ -121,7 +135,7 @@ export function useCartQuote(cart: Cart | undefined, owner: CartOwner) {
 export function useRevalidateCart() {
   const queryClient = useQueryClient()
   const owner = useCartOwner()
-  return useCallback(async () => {
+  return async () => {
     if (owner.kind === 'pending') throw new Error('Sessão ainda não resolvida.')
     const cart = await queryClient.fetchQuery({
       queryKey: ownerKey(owner),
@@ -130,12 +144,11 @@ export function useRevalidateCart() {
     })
     const quote = await queryClient.fetchQuery({
       queryKey: quoteKey(owner, cart.version),
-      queryFn: ({ signal }) =>
-        getCartQuote(owner.kind === 'guest' ? owner.guestCartId : null, signal),
+      queryFn: ({ signal }) => getCartQuote(actorOf(owner), signal),
       staleTime: 0,
     })
     return { cart, quote }
-  }, [queryClient, owner])
+  }
 }
 
 /**
@@ -145,7 +158,9 @@ export function useRevalidateCart() {
  */
 function storeCart(queryClient: QueryClient, owner: CartOwner, cart: Cart) {
   if (owner.kind === 'user') {
-    queryClient.setQueryData(cartKeys.user(owner.userId), cart)
+    if (isCurrentSession(owner.token)) {
+      queryClient.setQueryData(cartKeys.user(owner.userId), cart)
+    }
     return
   }
   queryClient.setQueryData(cartKeys.guest(cart.guestCartId), cart)
@@ -153,7 +168,7 @@ function storeCart(queryClient: QueryClient, owner: CartOwner, cart: Cart) {
 }
 
 interface CartMutationOptions<TVariables> {
-  mutationFn: (guestId: string | null, variables: TVariables) => Promise<Cart>
+  mutationFn: (actor: CartActor, variables: TVariables) => Promise<Cart>
   successMessage?: (variables: TVariables, cart: Cart) => string
   failureMessage: (variables: TVariables) => string
 }
@@ -174,8 +189,9 @@ function useCartMutation<TVariables>({
   const owner = useCartOwner()
 
   return useMutation({
-    mutationFn: (variables: TVariables) =>
-      mutationFn(owner.kind === 'guest' ? owner.guestCartId : null, variables),
+    mutationFn: (variables: TVariables) => {
+      return mutationFn(actorOf(owner), variables)
+    },
     onSuccess: (cart, variables) => {
       storeCart(queryClient, owner, cart)
       const message = successMessage?.(variables, cart)
@@ -200,8 +216,8 @@ interface AddItemVariables extends AddCartItemRequest {
 
 export function useAddToCart() {
   return useCartMutation<AddItemVariables>({
-    mutationFn: (guestId, { nftName: _name, ...item }) =>
-      addCartItem(guestId, item),
+    mutationFn: (actor, { nftName: _name, ...item }) =>
+      addCartItem(actor, item),
     successMessage: ({ nftName, quantity }) =>
       `${quantity} ${quantity === 1 ? 'unidade' : 'unidades'} de ${nftName} no carrinho.`,
     failureMessage: ({ nftName }) =>
@@ -217,8 +233,8 @@ interface ItemVariables {
 
 export function useUpdateCartItem() {
   return useCartMutation<ItemVariables & { quantity: number }>({
-    mutationFn: (guestId, { nftId, editionId, quantity }) =>
-      updateCartItem(guestId, nftId, editionId, { quantity }),
+    mutationFn: (actor, { nftId, editionId, quantity }) =>
+      updateCartItem(actor, nftId, editionId, { quantity }),
     successMessage: ({ nftName, quantity }) =>
       `Quantidade de ${nftName}: ${quantity}.`,
     failureMessage: ({ nftName }) =>
@@ -228,8 +244,8 @@ export function useUpdateCartItem() {
 
 export function useRemoveCartItem() {
   return useCartMutation<ItemVariables>({
-    mutationFn: (guestId, { nftId, editionId }) =>
-      removeCartItem(guestId, nftId, editionId),
+    mutationFn: (actor, { nftId, editionId }) =>
+      removeCartItem(actor, nftId, editionId),
     successMessage: ({ nftName }) => `${nftName} removido do carrinho.`,
     failureMessage: ({ nftName }) =>
       `Não foi possível remover ${nftName} do carrinho.`,
@@ -242,8 +258,9 @@ export function useApplyCoupon() {
   const announce = useAnnounce()
   const owner = useCartOwner()
   return useMutation({
-    mutationFn: (code: string) =>
-      applyCoupon(owner.kind === 'guest' ? owner.guestCartId : null, { code }),
+    mutationFn: (code: string) => {
+      return applyCoupon(actorOf(owner), { code })
+    },
     onSuccess: (cart) => {
       storeCart(queryClient, owner, cart)
       announce(`Código ${cart.couponCode ?? ''} aplicado.`)
@@ -253,7 +270,7 @@ export function useApplyCoupon() {
 
 export function useRemoveCoupon() {
   return useCartMutation<{ code: string }>({
-    mutationFn: (guestId) => removeCoupon(guestId),
+    mutationFn: (actor) => removeCoupon(actor),
     successMessage: ({ code }) => `Código ${code} removido.`,
     failureMessage: ({ code }) => `Não foi possível remover o código ${code}.`,
   })

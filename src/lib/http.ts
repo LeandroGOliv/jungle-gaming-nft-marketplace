@@ -18,7 +18,8 @@ export const clientApi = axios.create({
   timeout: TIMEOUT_MS,
 })
 
-type UnauthorizedHandler = (error: ApiError | null) => void
+/** `token`: a sessão recusada, que é a atual quando o handler é chamado. */
+type UnauthorizedHandler = (error: ApiError | null, token: string) => void
 
 let onUnauthorized: UnauthorizedHandler = () => {}
 
@@ -27,35 +28,41 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler) {
   onUnauthorized = handler
 }
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /**
+     * Token da sessão dona da chamada: o da sessão em que a consulta foi
+     * chaveada, não o atual no momento do envio. Sem ele, vai sem sessão.
+     */
+    session?: string | null
+  }
+}
+
 function bearer(token: string) {
   return `Bearer ${token}`
 }
 
-/**
- * Configuração de uma chamada feita com um token específico (consulta da
- * sessão, logout), não necessariamente o atual. O formato do header fica só
- * aqui: o tratamento de 401 compara o header enviado com o token atual.
- */
+/** Configuração de uma chamada feita em nome de uma sessão. */
 export function withSession(token: string) {
-  return { headers: { Authorization: bearer(token) } }
+  return { session: token }
 }
 
+// O token nunca vem do estado global no envio: durante uma troca de usuário,
+// a resposta seria gravada sob a chave do usuário anterior.
 clientApi.interceptors.request.use((config) => {
-  const token = sessionToken.get()
-  // Um token explícito (consulta da sessão, logout) prevalece sobre o atual.
-  if (token && !config.headers.has('Authorization')) {
-    config.headers.set('Authorization', bearer(token))
-  }
+  if (config.session)
+    config.headers.set('Authorization', bearer(config.session))
   return config
 })
 
 clientApi.interceptors.response.use(undefined, (error: unknown) => {
   if (isAxiosError(error) && isUnauthorized(error)) {
-    const sent = error.config?.headers.get('Authorization')
-    const token = sessionToken.get()
+    const sent = error.config?.session
     // Um 401 de uma requisição feita com outra sessão (já encerrada ou
     // trocada) não derruba a sessão atual.
-    if (token && sent === bearer(token)) onUnauthorized(getApiError(error))
+    if (sent && sent === sessionToken.get()) {
+      onUnauthorized(getApiError(error), sent)
+    }
   }
   return Promise.reject(error)
 })

@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAnnounce } from '@/hooks/use-announce'
-import { useSession, userKeys } from '@/hooks/use-session'
+import {
+  isCurrentSession,
+  ownerQueryFn,
+  ownerToken,
+  useSessionOwner,
+  userKeys,
+} from '@/hooks/use-session'
 import { describeRequestError, isUnauthorized } from '@/lib/http-error'
 import {
   addFavorite,
@@ -16,12 +22,12 @@ export const favoriteKeys = {
 
 /** Favoritos do usuário autenticado; desligado para visitantes. */
 export function useFavorites() {
-  const session = useSession()
-  const userId = session.status === 'authenticated' ? session.user.id : null
+  const owner = useSessionOwner()
+  const userId = owner?.userId ?? null
   const query = useQuery({
     queryKey: favoriteKeys.list(userId ?? 'anonymous'),
-    queryFn: ({ signal }) => listFavorites(signal),
-    enabled: userId !== null,
+    queryFn: ownerQueryFn(owner, listFavorites),
+    enabled: owner !== null,
   })
   return { ...query, userId }
 }
@@ -39,16 +45,22 @@ interface ToggleFavoriteVariables {
 export function useToggleFavorite(userId: string) {
   const queryClient = useQueryClient()
   const announce = useAnnounce()
+  const owner = useSessionOwner()
   const queryKey = favoriteKeys.list(userId)
   const mutationKey = [...queryKey, 'toggle']
   // Cliques seguidos geram mutations concorrentes: só a última a terminar
   // escreve no cache, para uma resposta antiga não desfazer um clique novo.
-  const isLastPending = () => queryClient.isMutating({ mutationKey }) === 1
+  // Também deixa de escrever se a sessão trocou: o cache dela já foi limpo.
+  const isLastPending = () =>
+    queryClient.isMutating({ mutationKey }) === 1 &&
+    isCurrentSession(owner?.token)
 
   return useMutation({
     mutationKey,
     mutationFn: ({ nftId, favorite }: ToggleFavoriteVariables) =>
-      favorite ? addFavorite(nftId) : removeFavorite(nftId),
+      favorite
+        ? addFavorite(ownerToken(owner, userId), nftId)
+        : removeFavorite(ownerToken(owner, userId), nftId),
     onMutate: async ({ nftId, favorite }) => {
       // Uma consulta em andamento sobrescreveria o valor otimista ao chegar.
       await queryClient.cancelQueries({ queryKey })

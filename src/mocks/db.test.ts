@@ -14,6 +14,48 @@ function createStore(storage = createMemoryStorage()) {
 }
 
 describe('MockStore', () => {
+  it('relê o estado gravado por outra aba; sessões não viram eventos', () => {
+    const storage = createMemoryStorage()
+    const here = createStore(storage)
+    const other = createStore(storage)
+    const listener = vi.fn()
+    here.subscribe(listener)
+
+    other.write((db) => {
+      db.sessions.push({
+        token: 'tok_outra_aba',
+        userId: 'usr_nova',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      })
+    })
+    here.reload()
+
+    expect(here.state.sessions.map((s) => s.token)).toContain('tok_outra_aba')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('ao reler, notifica os NFTs e pedidos que a outra aba mudou', () => {
+    const storage = createMemoryStorage()
+    const here = createStore(storage)
+    const other = createStore(storage)
+    const listener = vi.fn()
+    here.subscribe(listener)
+    const nftId = other.state.nfts[0].id
+
+    other.write((db, tx) => {
+      const nft = db.nfts.find((n) => n.id === nftId)!
+      nft.priceEth = '7.5'
+      tx.touch('nft', nft)
+    })
+    here.reload()
+
+    expect(here.state.nfts[0].priceEth).toBe('7.5')
+    expect(listener).toHaveBeenCalledWith([
+      { type: 'nft', id: nftId, version: 2 },
+    ])
+  })
+
   it('parte das fixtures quando não há estado salvo e persiste o seed', () => {
     const storage = createMemoryStorage()
     const store = createStore(storage)

@@ -3,6 +3,7 @@ import { useAnnounce } from '@/hooks/use-announce'
 import { useLogout } from '@/hooks/use-session'
 import { checkoutDraft } from '@/lib/checkout-draft'
 import { orderAttempt } from '@/lib/order-attempt'
+import { redirectOwner } from '@/lib/redirect-owner'
 
 /**
  * Logout pela interface: encerra a sessão, avisa na região viva e, se a tela
@@ -26,6 +27,8 @@ export function useSignOut() {
       logout.mutate()
       checkoutDraft.clearAll()
       orderAttempt.clearAll()
+      // Quem sai por vontade própria não deixa tela para retomar.
+      redirectOwner.clear()
       announce('Você saiu da sua conta.')
       if (inPrivateRoute) void navigate({ to: '/', replace: true })
     },

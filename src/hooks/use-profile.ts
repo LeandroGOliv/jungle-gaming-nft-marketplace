@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAnnounce } from '@/hooks/use-announce'
-import { sessionKeys, useSession, userKeys } from '@/hooks/use-session'
+import {
+  isCurrentSession,
+  ownerQueryFn,
+  ownerToken,
+  sessionKeys,
+  useSessionOwner,
+  userKeys,
+} from '@/hooks/use-session'
 import {
   changePassword,
   getProfile,
@@ -23,12 +30,12 @@ export const profileKeys = {
 
 /** Perfil do usuário autenticado (a rota já exige sessão). */
 export function useProfile() {
-  const session = useSession()
-  const userId = session.status === 'authenticated' ? session.user.id : null
+  const owner = useSessionOwner()
+  const userId = owner?.userId ?? null
   const query = useQuery({
     queryKey: profileKeys.detail(userId ?? 'anonymous'),
-    queryFn: ({ signal }) => getProfile(signal),
-    enabled: userId !== null,
+    queryFn: ownerQueryFn(owner, getProfile),
+    enabled: owner !== null,
   })
   return { ...query, userId }
 }
@@ -38,7 +45,8 @@ export function useProfile() {
  * alimenta o header. Só toca a sessão do mesmo usuário: uma resposta que chega
  * depois de uma troca de conta não vaza para a sessão nova.
  */
-function applyUser(queryClient: QueryClient, user: User) {
+function applyUser(queryClient: QueryClient, token: string, user: User) {
+  if (!isCurrentSession(token)) return
   queryClient.setQueryData(profileKeys.detail(user.id), user)
   queryClient.setQueriesData<SessionInfo | null>(
     { queryKey: sessionKeys.all },
@@ -68,6 +76,7 @@ export interface SaveProfileResult {
 export function useSaveProfile(userId: string) {
   const queryClient = useQueryClient()
   const announce = useAnnounce()
+  const owner = useSessionOwner()
   const queryKey = profileKeys.detail(userId)
 
   return useMutation({
@@ -77,13 +86,14 @@ export function useSaveProfile(userId: string) {
       avatar,
       password,
     }: SaveProfileVariables): Promise<SaveProfileResult> => {
-      applyUser(queryClient, await updateProfile(profile))
+      const token = ownerToken(owner, userId)
+      applyUser(queryClient, token, await updateProfile(token, profile))
       if (avatar.kind === 'upload') {
-        applyUser(queryClient, await uploadAvatar(avatar.file))
+        applyUser(queryClient, token, await uploadAvatar(token, avatar.file))
       } else if (avatar.kind === 'remove') {
-        applyUser(queryClient, await removeAvatar())
+        applyUser(queryClient, token, await removeAvatar(token))
       }
-      if (password) await changePassword(password)
+      if (password) await changePassword(token, password)
       return { passwordChanged: password !== null }
     },
     onSuccess: ({ passwordChanged }) => {

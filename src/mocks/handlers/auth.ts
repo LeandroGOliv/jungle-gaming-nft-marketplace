@@ -185,6 +185,7 @@ export function createAuthHandlers(apiUrl: string, runtime: MockRuntime) {
           db.sessions = db.sessions.filter((s) => s.token !== token)
         })
       }
+      runtime.revalidateRealtime()
       return new HttpResponse(null, { status: 204 })
     }),
   ]

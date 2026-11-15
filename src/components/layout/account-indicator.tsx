@@ -14,7 +14,7 @@ export function AccountIndicator() {
   const session = useSession()
 
   if (session.status === 'pending') {
-    return <Skeleton className="h-[35px] w-[100px] rounded-md" />
+    return <SessionPending failed={session.failed} onRetry={session.retry} />
   }
   if (session.status === 'anonymous') return <SignInButton />
   return (
@@ -22,6 +22,42 @@ export function AccountIndicator() {
       <ProfileLink user={session.user} />
       <SignOutButton displayName={session.user.displayName} />
     </div>
+  )
+}
+
+/**
+ * Sessão salva ainda sem confirmação. Fora do Figma (desvio registrado): se a
+ * verificação falha sem resposta, o colecionador não vira visitante; o header
+ * oferece nova tentativa em vez de "Entrar", e a consulta também repete sozinha.
+ */
+function SessionPending({
+  failed,
+  onRetry,
+}: {
+  failed: boolean
+  onRetry: () => void
+}) {
+  return (
+    <>
+      <p role="status" className="sr-only">
+        {failed
+          ? 'Não foi possível confirmar sua sessão. Tentando de novo.'
+          : 'Verificando sua sessão…'}
+      </p>
+      {failed ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-[35px] w-[100px] rounded-md text-base leading-[normal] font-medium"
+          onClick={onRetry}
+        >
+          Reconectar
+          <span className="sr-only"> sua sessão</span>
+        </Button>
+      ) : (
+        <Skeleton className="h-[35px] w-[100px] rounded-md" />
+      )}
+    </>
   )
 }
 

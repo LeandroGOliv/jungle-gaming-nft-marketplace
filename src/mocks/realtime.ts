@@ -36,10 +36,15 @@ export interface RealtimeHub {
     payload: unknown,
   ) => void
   setAvailable: (available: boolean) => void
+  /**
+   * Encerra as conexões autenticadas cuja sessão deixou de valer (logout,
+   * expiração, reset): o cliente reconecta, e sem sessão volta como visitante.
+   */
+  revalidate: () => void
   connectionCount: () => number
   /**
-   * Dono de cada conexão aberta, como resolvido no handshake. Não muda se a
-   * sessão terminar depois: uma conexão esquecida continua visível.
+   * Dono de cada conexão aberta, como resolvido no handshake. Uma conexão
+   * esquecida pelo cliente continua visível aqui até a sessão dela terminar.
    */
   connectionUsers: () => Array<string | null>
 }
@@ -93,14 +98,25 @@ export function createRealtimeHub(options: {
 
     // O binding não implementa o heartbeat; sem ele o cliente encerra a
     // conexão por "ping timeout" e reconecta em ciclo.
-    const heartbeat = setInterval(
-      () => connection.client.send(ENGINE_IO_PING),
-      PING_INTERVAL_MS,
-    )
+    // O mesmo intervalo encerra a conexão cuja sessão venceu pelo relógio.
+    const heartbeat = setInterval(() => {
+      if (!isCurrent(entry)) {
+        entry.close()
+        return
+      }
+      connection.client.send(ENGINE_IO_PING)
+    }, PING_INTERVAL_MS)
     connection.client.addEventListener('close', () => {
       clearInterval(heartbeat)
       connections.delete(entry)
     })
+  }
+
+  /** Visitante sempre vale; conexão autenticada só enquanto a sessão dela vale. */
+  function isCurrent(entry: RealtimeConnection) {
+    return (
+      entry.userId === null || options.resolveUser(entry.auth) === entry.userId
+    )
   }
 
   return {
@@ -110,7 +126,16 @@ export function createRealtimeHub(options: {
     },
     sendToUser(userId, event, payload) {
       for (const connection of connections) {
-        if (connection.userId === userId) connection.emit(event, payload)
+        // A sessão é conferida na entrega: um token vencido ou encerrado
+        // deixa de receber eventos privados mesmo antes de a conexão cair.
+        if (connection.userId === userId && isCurrent(connection)) {
+          connection.emit(event, payload)
+        }
+      }
+    },
+    revalidate() {
+      for (const connection of connections) {
+        if (!isCurrent(connection)) connection.close()
       }
     },
     setAvailable(available) {

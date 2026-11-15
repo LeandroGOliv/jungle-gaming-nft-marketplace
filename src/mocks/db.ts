@@ -83,6 +83,17 @@ function isMockDb(value: unknown): value is MockDb {
   )
 }
 
+function newerVersions(
+  type: RealtimeResourceType,
+  before: Array<{ id: string; version: number }>,
+  after: Array<{ id: string; version: number }>,
+): Array<StoreChange> {
+  const known = new Map(before.map((entity) => [entity.id, entity.version]))
+  return after
+    .filter((entity) => entity.version > (known.get(entity.id) ?? 0))
+    .map(({ id, version }) => ({ type, id, version }))
+}
+
 export class MockStore {
   #state: MockDb
   readonly #storage: KeyValueStorage
@@ -118,6 +129,23 @@ export class MockStore {
     this.#persist()
     if (changes.size > 0) this.#notify([...changes.values()])
     return result
+  }
+
+  /**
+   * Adota o estado que outra aba gravou: o "servidor" simulado é um só para
+   * todas as abas. NFTs e pedidos com versão nova são notificados, para os
+   * eventos também chegarem às conexões desta aba.
+   */
+  reload() {
+    const saved = readJson(this.#storage, this.#key, isMockDb)
+    if (!saved) return
+    const previous = this.#state
+    this.#state = saved
+    const changes = [
+      ...newerVersions('nft', previous.nfts, saved.nfts),
+      ...newerVersions('order', previous.orders, saved.orders),
+    ]
+    if (changes.length > 0) this.#notify(changes)
   }
 
   /** Substitui todo o estado (reset ou troca de cenário). */

@@ -16,9 +16,12 @@ import { SORT_LABELS, TAB_LABELS } from './labels'
  */
 export function CatalogTabs({ active }: { active?: CatalogSearch['aba'] }) {
   return (
+    // `overflow-x-auto` também recorta no eixo vertical: o padding de baixo
+    // abriga o sublinhado da aba ativa, senão ele vira um scroll vertical. No
+    // desktop a margem negativa devolve o espaço, mantendo o alinhamento.
     <nav
       aria-label="Recortes do catálogo"
-      className="-mx-1 overflow-x-auto px-1 pb-2 md:pb-0"
+      className="-mx-1 overflow-x-auto px-1 pb-2 md:-mb-2"
     >
       <ul className="flex gap-3 md:gap-5">
         {TAB_LABELS.map(([aba, label]) => {

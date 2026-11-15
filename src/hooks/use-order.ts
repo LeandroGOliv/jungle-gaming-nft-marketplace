@@ -5,7 +5,7 @@ import { useAnnounce } from '@/hooks/use-announce'
 import { cartKeys } from '@/hooks/use-cart'
 import { nftKeys } from '@/hooks/use-nfts'
 import { useRealtimeSocket } from '@/hooks/use-realtime'
-import { useSession, userKeys } from '@/hooks/use-session'
+import { ownerQueryFn, useSessionOwner, userKeys } from '@/hooks/use-session'
 import { getApiError, isNoResponse } from '@/lib/http-error'
 import { orderAttempt } from '@/lib/order-attempt'
 import { createOrder, getOrder } from '@/services/orders'
@@ -28,30 +28,25 @@ export const orderKeys = {
 // tempo real pode estar fora (cenário "Sem conexão" do socket).
 const PENDING_REFETCH_MS = 10_000
 
-function useUserId() {
-  const session = useSession()
-  return session.status === 'authenticated' ? session.user.id : null
-}
-
 /**
  * `POST /orders` com a chave da tentativa. Sem resposta (timeout, queda), o
  * envio se repete com a mesma chave: se o pedido já existia, a API devolve o
  * mesmo, nunca um segundo.
  */
 export function useCreateOrder() {
-  const userId = useUserId()
+  const owner = useSessionOwner()
   const navigate = useNavigate()
   const announce = useAnnounce()
   return useMutation({
     mutationFn: async (request: CreateOrderRequest) => {
-      if (!userId) throw new Error('Sessão encerrada.')
-      const key = orderAttempt.begin(userId, request)
+      if (!owner) throw new Error('Sessão encerrada.')
+      const key = orderAttempt.begin(owner.userId, request)
       try {
-        const order = await createOrder(key, request)
-        orderAttempt.settle(userId, key)
+        const order = await createOrder(owner.token, key, request)
+        orderAttempt.settle(owner.userId, key)
         return order
       } catch (error) {
-        if (!isNoResponse(error)) orderAttempt.settle(userId, key)
+        if (!isNoResponse(error)) orderAttempt.settle(owner.userId, key)
         throw error
       }
     },
@@ -74,13 +69,16 @@ export function useCreateOrder() {
  * reconectar, a REST reconcilia o que se perdeu durante a queda.
  */
 export function useOrder(orderId: string | undefined) {
-  const userId = useUserId()
+  const owner = useSessionOwner()
+  const userId = owner?.userId ?? null
   const socket = useRealtimeSocket()
   const queryClient = useQueryClient()
   const announce = useAnnounce()
   const query = useQuery({
     queryKey: orderKeys.detail(userId ?? '', orderId ?? ''),
-    queryFn: ({ signal }) => getOrder(orderId!, signal),
+    queryFn: ownerQueryFn<Order>(owner, (token, signal) =>
+      getOrder(token, orderId!, signal),
+    ),
     enabled: userId !== null && orderId !== undefined,
     retry: (failures, error) =>
       getApiError(error)?.status !== 404 && failures < 2,
@@ -152,7 +150,7 @@ export function useOrder(orderId: string | undefined) {
  * repete-se com a mesma chave para descobrir o pedido, sem criar outro.
  */
 export function usePendingOrderAttempt() {
-  const userId = useUserId()
+  const userId = useSessionOwner()?.userId ?? null
   // Lido só ao montar: um envio em curso nesta tela também fica marcado.
   const [pending] = useState(() =>
     userId ? (orderAttempt.read(userId)?.inFlight ?? null) : null,

@@ -90,6 +90,14 @@ export class Mocks {
     )
   }
 
+  /** Evento cru só para as conexões do usuário, como um evento privado. */
+  emitToUser(userId: string, event: RealtimeEventName, payload: unknown) {
+    return this.page.evaluate(
+      ([id, name, data]) => window.__mocks!.emitToUser(id, name, data),
+      [userId, event, payload] as const,
+    )
+  }
+
   /** Evento cru, para duplicatas e versões antigas. */
   emit(event: RealtimeEventName, payload: unknown) {
     return this.page.evaluate(
