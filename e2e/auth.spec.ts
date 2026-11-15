@@ -59,7 +59,9 @@ test.describe('login e cadastro', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: 'Perfil do colecionador' }),
     ).toBeVisible()
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Nova Sato')
   })
 
   test('retorno após o login aceita só caminhos internos', async ({
@@ -133,17 +135,23 @@ test.describe('login e cadastro', () => {
     await expect(page).not.toHaveURL(/auth=/)
 
     await page.goto('/perfil')
-    await expect(page.getByRole('main').getByText('ana.lopes')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de usuário' }),
+    ).toHaveValue('ana.lopes')
   })
 
   test('sessão sobrevive ao refresh', async ({ page, mocks }) => {
     await mocks.goto('/perfil')
     await signIn(page, NOVA)
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Nova Sato')
 
     await page.reload()
     await expect(page).toHaveURL(/\/perfil$/)
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Nova Sato')
     await expect(authDialog(page)).toBeHidden()
   })
 
@@ -170,7 +178,9 @@ test.describe('login e cadastro', () => {
 
     await signIn(page, NOVA)
     await expect(page).toHaveURL(/\/perfil$/)
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Nova Sato')
   })
 
   test('logout e troca de usuário não deixam dados nem socket da sessão anterior', async ({
@@ -179,7 +189,9 @@ test.describe('login e cadastro', () => {
   }) => {
     await mocks.goto('/perfil')
     await signIn(page, NOVA)
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeVisible()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Nova Sato')
     await expect.poll(() => realtimeUsers(page)).toEqual(['usr_nova'])
 
     await page.getByRole('main').getByRole('button', { name: 'Sair' }).click()
@@ -195,8 +207,9 @@ test.describe('login e cadastro', () => {
     await signIn(page, RAFAEL)
 
     await expect(page).toHaveURL(/\/perfil$/)
-    await expect(page.getByRole('main').getByText('Rafael Lima')).toBeVisible()
-    await expect(page.getByRole('main').getByText('Nova Sato')).toBeHidden()
+    await expect(
+      page.getByRole('main').getByRole('textbox', { name: 'Nome de exibição' }),
+    ).toHaveValue('Rafael Lima')
     await expect.poll(() => realtimeUsers(page)).toEqual(['usr_rafael'])
   })
 
