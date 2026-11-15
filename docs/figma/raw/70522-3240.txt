@@ -1,0 +1,99 @@
+// Figma get_design_context — node 70522:3240 "Header With Divider" (Desktop / Início).
+// Fetched 2026-11-14. Verbatim response code; asset URLs below expired after 7 days.
+// Asset constants → local files:
+//   imgActiveUnderline → not kept (3 px CSS bar, `primary`)
+//   imgSearchIcon      → public/icons/search.svg
+//   imgCartIcon        → public/icons/cart.svg
+//   imgBadge           → not kept (CSS circle, `primary` with 2 px `ink` ring)
+//   imgLogout          → public/icons/login.svg
+//   imgLine1           → not kept (CSS hairline, `primary`)
+// Styles: Color/Foreground #F5F1EB; Body/14 Bold · lh auto (14, 700, lh 100%, ls 10%);
+// Text/Accent #E89B55; Body Large/16 Bold · lh auto; Color/Primary #D28A4C;
+// Body Large/16 Regular · lh auto; Color/Ink #140D0A; Tiny/10 Medium (10, 500);
+// Body Large/16 Medium · lh auto (16, 500).
+// Component notes: "Header With Divider" (70504:3017) = Header Row + hairline; used on home,
+// collector profile, wallets and inside Marketplace Page (auth screens). Market screens use
+// the bare Header Row. "Header Row" (70486:560): Active = Home on Início/Entrar/Criar conta/
+// Perfil/Carteiras, Market on the four Mercado-flow screens; Badge Count = cart item count.
+
+const assetPathPrefix = "https://www.figma.com/api/mcp/asset/91f8dd43-e75e-489a-ab1d-6ec857ee7829";
+const imgActiveUnderline = `${assetPathPrefix}/66cfd.svg`;
+const imgSearchIcon = `${assetPathPrefix}/bd8c9.svg`;
+const imgCartIcon = `${assetPathPrefix}/c0c08.svg`;
+const imgBadge = `${assetPathPrefix}/aa630.svg`;
+const imgLogout = `${assetPathPrefix}/62554.svg`;
+const imgLine1 = `${assetPathPrefix}/57141.svg`;
+
+export default function HeaderWithDivider() {
+  return (
+    <div className="content-stretch flex flex-col items-start relative size-full" data-node-id="70522:3240" data-name="Header With Divider">
+      <div className="content-stretch flex items-start justify-between relative shrink-0 w-full" data-node-id="I70522:3240;70504:3015" data-name="Header Row">
+        <div className="h-[34.3px] overflow-clip relative shrink-0 w-[160px]" data-node-id="I70522:3240;70504:3015;70486:509" data-name="Logo">
+          <p className="[word-break:break-word] absolute font-[family-name:var(--font\/family,'Roboto_Mono:Bold')] font-bold leading-[normal] left-0 text-[14px] text-[color:var(--color\/foreground,#f5f1eb)] top-[8.15px] tracking-[1.4px] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:510">
+            KURIO
+          </p>
+        </div>
+        <div className="content-stretch flex gap-[40px] items-start overflow-clip relative shrink-0" data-node-id="I70522:3240;70504:3015;70486:511" data-name="Nav">
+          <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-[58px]" data-node-id="I70522:3240;70504:3015;70486:512" data-name="Nav Item">
+            <p className="[word-break:break-word] font-[family-name:var(--font\/family,'Roboto_Mono:Bold')] font-bold leading-[normal] relative shrink-0 text-[16px] text-[color:var(--color\/text-accent,#e89b55)] w-full" data-node-id="I70522:3240;70504:3015;70486:513">
+              Início
+            </p>
+            <div className="h-0 relative shrink-0 w-full" data-node-id="I70522:3240;70504:3015;70486:514" data-name="Active Underline">
+              <div className="absolute inset-[-3px_0_0_0]">
+                <img alt="" className="block max-w-none size-full" src={imgActiveUnderline} />
+              </div>
+            </div>
+          </div>
+          <p className="[word-break:break-word] font-[family-name:var(--font\/family,'Roboto_Mono:Regular')] font-normal leading-[normal] relative shrink-0 text-[16px] text-[color:var(--color\/foreground,#f5f1eb)] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:515">
+            Mercado
+          </p>
+          <p className="[word-break:break-word] font-[family-name:var(--font\/family,'Roboto_Mono:Regular')] font-normal leading-[normal] relative shrink-0 text-[16px] text-[color:var(--color\/foreground,#f5f1eb)] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:516">
+            Criadores
+          </p>
+          <p className="[word-break:break-word] font-[family-name:var(--font\/family,'Roboto_Mono:Regular')] font-normal leading-[normal] relative shrink-0 text-[16px] text-[color:var(--color\/foreground,#f5f1eb)] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:517">
+            Aprenda
+          </p>
+        </div>
+        <div className="content-stretch flex gap-[28px] items-center relative shrink-0" data-node-id="I70522:3240;70504:3015;70486:518" data-name="Header Actions">
+          <div className="h-[20px] relative shrink-0 w-[20.001px]" data-node-id="I70522:3240;70504:3015;70486:519" data-name="Search Icon">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSearchIcon} />
+          </div>
+          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0" data-node-id="I70522:3240;70504:3015;70486:520" data-name="Cart">
+            <div className="col-1 h-[24px] ml-0 mt-0 relative row-1 w-[24.004px]" data-node-id="I70522:3240;70504:3015;70486:521" data-name="Cart Icon">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgCartIcon} />
+            </div>
+            <div className="col-1 ml-[15px] mt-0 relative row-1 size-[16px]" data-node-id="I70522:3240;70504:3015;70486:522" data-name="Badge">
+              <div className="absolute inset-[-12.5%]">
+                <img alt="" className="block max-w-none size-full" src={imgBadge} />
+              </div>
+            </div>
+            <p className="[word-break:break-word] col-1 font-[family-name:var(--font\/family,'Roboto_Mono:Medium')] font-medium leading-[normal] ml-[20px] mt-[1.5px] relative row-1 text-[10px] text-[color:var(--color\/ink,#140d0a)] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:523">
+              6
+            </p>
+          </div>
+          <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0" data-node-id="I70522:3240;70504:3015;70486:524" data-name="Login">
+            <div className="bg-[var(--color\/primary,#d28a4c)] col-1 content-stretch flex flex-col h-[35px] items-center justify-center ml-0 mt-0 relative rounded-[6px] row-1 w-[100px]" data-node-id="I70522:3240;70504:3015;70486:525" data-name="Login Button">
+              <div className="content-stretch flex gap-[4px] items-start relative shrink-0" data-node-id="I70522:3240;70504:3015;70486:526" data-name="Login Button Content">
+                <div className="relative shrink-0 size-[20px]" data-node-id="I70522:3240;70504:3015;70486:527" data-name="Iconly/Curved/Logout">
+                  <div className="absolute inset-[13.75%_-8.96%_-6.25%_11.29%]" data-node-id="I70522:3240;70504:3015;70486:527;29221:4777" data-name="Logout">
+                    <div className="absolute inset-[-4.86%_-4.61%]">
+                      <img alt="" className="block max-w-none size-full" src={imgLogout} />
+                    </div>
+                  </div>
+                </div>
+                <p className="[word-break:break-word] font-[family-name:var(--font\/family,'Roboto_Mono:Medium')] font-medium leading-[normal] relative shrink-0 text-[16px] text-[color:var(--color\/ink,#140d0a)] whitespace-nowrap" data-node-id="I70522:3240;70504:3015;70486:528">
+                  Entrar
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="h-0 relative shrink-0 w-full" data-node-id="I70522:3240;70504:3016">
+        <div className="absolute inset-[-0.3px_0_0_0]">
+          <img alt="" className="block max-w-none size-full" src={imgLine1} />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -3,8 +3,15 @@ export type EthAmount = string
 
 export type BlockchainNetwork = 'ethereum' | 'polygon'
 
-export type NftCategory =
-  'art' | 'collectible' | 'music' | 'photography' | 'gaming'
+export const NFT_CATEGORIES = [
+  'art',
+  'collectible',
+  'music',
+  'photography',
+  'gaming',
+] as const
+
+export type NftCategory = (typeof NFT_CATEGORIES)[number]
 
 export type NftRarity = 'common' | 'rare' | 'epic' | 'legendary'
 

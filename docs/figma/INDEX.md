@@ -27,6 +27,14 @@ Mobile frames are 414 × 896.
 | Login                  | mobile   | `16:1022` | 414 × 896   | Logo, Title, Form `70399:241`, Sign In Button, Mobile Social Block, Signup Link                                  | —    | —          |
 | Cadastro               | mobile   | `16:1228` | 414 × 896   | Logo, Title, Form `70399:250`, Create Profile Button, Mobile Social Block, Login Link                            | —    | —          |
 
+## Shared components
+
+| Component                          | Node                    | Spec                               | Raw                                                            | Screenshots                                                                                              |
+| ---------------------------------- | ----------------------- | ---------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Header With Divider / Header Row   | `70522:3240`            | [layout-shell.md](layout-shell.md) | [70522-3240](raw/70522-3240.txt)                               | [header-desktop](screenshots/header-desktop.png)                                                         |
+| Footer                             | `70492:696`             | [layout-shell.md](layout-shell.md) | [70492-696](raw/70492-696.txt)                                 | [footer-desktop](screenshots/footer-desktop.png)                                                         |
+| Mobile Search Bar · Mobile Tab Bar | `70395:239` `70395:245` | [layout-shell.md](layout-shell.md) | [70395-239](raw/70395-239.txt), [70395-245](raw/70395-245.txt) | [search-bar-mobile](screenshots/search-bar-mobile.png), [tab-bar-mobile](screenshots/tab-bar-mobile.png) |
+
 No mobile frame exists for Confirmação de Pedido, Perfil do Colecionador and
 Carteiras — derive them from the desktop frames and the mobile component
 language.

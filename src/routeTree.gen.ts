@@ -9,68 +9,257 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SimulacaoRouteImport } from './routes/simulacao'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as UnauthenticatedRouteImport } from './routes/_unauthenticated'
+import { Route as AuthenticatedCarteirasRouteImport } from './routes/_authenticated/carteiras'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as PublicIndexRouteImport } from './routes/_public/index'
+import { Route as PublicCarrinhoRouteImport } from './routes/_public/carrinho'
+import { Route as PublicEmBreveRouteImport } from './routes/_public/em-breve'
+import { Route as PublicSimulacaoRouteImport } from './routes/_public/simulacao'
+import { Route as UnauthenticatedLoginRouteImport } from './routes/_unauthenticated/login'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SimulacaoRoute = SimulacaoRouteImport.update({
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnauthenticatedRoute = UnauthenticatedRouteImport.update({
+  id: '/_unauthenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCarteirasRoute = AuthenticatedCarteirasRouteImport.update({
+  id: '/carteiras',
+  path: '/carteiras',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const PublicIndexRoute = PublicIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCarrinhoRoute = PublicCarrinhoRouteImport.update({
+  id: '/carrinho',
+  path: '/carrinho',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicEmBreveRoute = PublicEmBreveRouteImport.update({
+  id: '/em-breve',
+  path: '/em-breve',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicSimulacaoRoute = PublicSimulacaoRouteImport.update({
   id: '/simulacao',
   path: '/simulacao',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
+} as any)
+const UnauthenticatedLoginRoute = UnauthenticatedLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => UnauthenticatedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/simulacao': typeof SimulacaoRoute
+  '/': typeof PublicIndexRoute
+  '/carteiras': typeof AuthenticatedCarteirasRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/carrinho': typeof PublicCarrinhoRoute
+  '/em-breve': typeof PublicEmBreveRoute
+  '/simulacao': typeof PublicSimulacaoRoute
+  '/login': typeof UnauthenticatedLoginRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/simulacao': typeof SimulacaoRoute
+  '/': typeof PublicIndexRoute
+  '/carteiras': typeof AuthenticatedCarteirasRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/carrinho': typeof PublicCarrinhoRoute
+  '/em-breve': typeof PublicEmBreveRoute
+  '/simulacao': typeof PublicSimulacaoRoute
+  '/login': typeof UnauthenticatedLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/simulacao': typeof SimulacaoRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
+  '/_unauthenticated': typeof UnauthenticatedRouteWithChildren
+  '/_authenticated/carteiras': typeof AuthenticatedCarteirasRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_public/carrinho': typeof PublicCarrinhoRoute
+  '/_public/em-breve': typeof PublicEmBreveRoute
+  '/_public/simulacao': typeof PublicSimulacaoRoute
+  '/_unauthenticated/login': typeof UnauthenticatedLoginRoute
+  '/_public/': typeof PublicIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/simulacao'
+  fullPaths:
+    | '/'
+    | '/carteiras'
+    | '/perfil'
+    | '/carrinho'
+    | '/em-breve'
+    | '/simulacao'
+    | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/simulacao'
-  id: '__root__' | '/' | '/simulacao'
+  to:
+    | '/'
+    | '/carteiras'
+    | '/perfil'
+    | '/carrinho'
+    | '/em-breve'
+    | '/simulacao'
+    | '/login'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/_public'
+    | '/_unauthenticated'
+    | '/_authenticated/carteiras'
+    | '/_authenticated/perfil'
+    | '/_public/carrinho'
+    | '/_public/em-breve'
+    | '/_public/simulacao'
+    | '/_unauthenticated/login'
+    | '/_public/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  SimulacaoRoute: typeof SimulacaoRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
+  UnauthenticatedRoute: typeof UnauthenticatedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/simulacao': {
-      id: '/simulacao'
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_unauthenticated': {
+      id: '/_unauthenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof UnauthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/carteiras': {
+      id: '/_authenticated/carteiras'
+      path: '/carteiras'
+      fullPath: '/carteiras'
+      preLoaderRoute: typeof AuthenticatedCarteirasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_public/': {
+      id: '/_public/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/carrinho': {
+      id: '/_public/carrinho'
+      path: '/carrinho'
+      fullPath: '/carrinho'
+      preLoaderRoute: typeof PublicCarrinhoRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/em-breve': {
+      id: '/_public/em-breve'
+      path: '/em-breve'
+      fullPath: '/em-breve'
+      preLoaderRoute: typeof PublicEmBreveRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/simulacao': {
+      id: '/_public/simulacao'
       path: '/simulacao'
       fullPath: '/simulacao'
-      preLoaderRoute: typeof SimulacaoRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicSimulacaoRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_unauthenticated/login': {
+      id: '/_unauthenticated/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof UnauthenticatedLoginRouteImport
+      parentRoute: typeof UnauthenticatedRoute
     }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedCarteirasRoute: typeof AuthenticatedCarteirasRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCarteirasRoute: AuthenticatedCarteirasRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+interface PublicRouteChildren {
+  PublicCarrinhoRoute: typeof PublicCarrinhoRoute
+  PublicEmBreveRoute: typeof PublicEmBreveRoute
+  PublicSimulacaoRoute: typeof PublicSimulacaoRoute
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicCarrinhoRoute: PublicCarrinhoRoute,
+  PublicEmBreveRoute: PublicEmBreveRoute,
+  PublicSimulacaoRoute: PublicSimulacaoRoute,
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
+interface UnauthenticatedRouteChildren {
+  UnauthenticatedLoginRoute: typeof UnauthenticatedLoginRoute
+}
+
+const UnauthenticatedRouteChildren: UnauthenticatedRouteChildren = {
+  UnauthenticatedLoginRoute: UnauthenticatedLoginRoute,
+}
+
+const UnauthenticatedRouteWithChildren = UnauthenticatedRoute._addFileChildren(
+  UnauthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  SimulacaoRoute: SimulacaoRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
+  UnauthenticatedRoute: UnauthenticatedRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

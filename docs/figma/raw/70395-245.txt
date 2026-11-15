@@ -1,0 +1,89 @@
+// Figma get_design_context — node 70395:245 "Tab Bar" (Mobile / Início).
+// Fetched 2026-11-14. Verbatim response code; asset URLs below expired after 7 days.
+// Asset constants → local files:
+//   imgShop      → public/icons/tab-shop.svg
+//   imgUser      → public/icons/tab-user.svg
+//   imgVector    → public/icons/tab-bar-bg.svg
+//   imgEllipse39 → public/icons/tab-scan-circle.svg
+//   imgHome      → public/icons/tab-home.svg
+//   imgVector1   → public/icons/tab-heart.svg
+//   imgVector2   → public/icons/tab-scan-line.svg
+//   imgVector3   → public/icons/tab-scan-corner-bl.svg
+//   imgVector4   → public/icons/tab-scan-corner-tr.svg
+//   imgVector5   → public/icons/tab-scan-corner-br.svg
+//   imgVector6   → public/icons/tab-scan-corner-tl.svg
+// (the scan glyph vectors were re-downloaded from download_assets on group 15:5529; the
+// group's own export bakes the frame background in and is not usable)
+// Styles: Color/Surface Card #241612; Text/Accent #E89B55; Text/Secondary #CFB28C;
+// Color/Foreground #F5F1EB.
+
+const assetPathPrefix = "https://www.figma.com/api/mcp/asset/a7c154a5-298c-46dc-94ff-9b8c46eb0b80";
+const imgShop = `${assetPathPrefix}/352b3.svg`;
+const imgUser = `${assetPathPrefix}/99dca.svg`;
+const imgVector = `${assetPathPrefix}/3b81f.svg`;
+const imgEllipse39 = `${assetPathPrefix}/b1ba5.svg`;
+const imgHome = `${assetPathPrefix}/b096d.svg`;
+const imgVector1 = `${assetPathPrefix}/c40be.svg`;
+const imgVector2 = `${assetPathPrefix}/d5458.svg`;
+const imgVector3 = `${assetPathPrefix}/f7581.svg`;
+const imgVector4 = `${assetPathPrefix}/97351.svg`;
+const imgVector5 = `${assetPathPrefix}/db42b.svg`;
+const imgVector6 = `${assetPathPrefix}/ca931.svg`;
+
+function Shop({ className }: { className?: string }) {
+  return (
+    <div className={className || "relative size-[20px]"} data-node-id="15:5524" data-name="Shop">
+      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgShop} />
+    </div>
+  );
+}
+
+function User({ className }: { className?: string }) {
+  return (
+    <div className={className || "relative size-[20px]"} data-node-id="15:5522" data-name="User">
+      <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgUser} />
+    </div>
+  );
+}
+
+export default function TabBar() {
+  return (
+    <div className="relative size-full" data-node-id="70395:245" data-name="Tab Bar">
+      <div className="absolute inset-[24.6%_0_0.04%_0]" data-node-id="15:5504" data-name="Vector">
+        <div className="absolute inset-[-42.13%_-7.25%_-21.06%_-7.25%]">
+          <img alt="" className="block max-w-none size-full" src={imgVector} />
+        </div>
+      </div>
+      <div className="absolute left-[175px] size-[65px] top-0" data-node-id="15:5507">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEllipse39} />
+      </div>
+      <div className="absolute inset-[56.35%_86.47%_27.78%_8.7%]" data-node-id="15:5519" data-name="Iconly/Bold/Home">
+        <div className="absolute inset-[8.33%_10.42%]" data-node-id="I15:5519;15:5517" data-name="Home">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHome} />
+        </div>
+      </div>
+      <User className="absolute inset-[56.35%_9.66%_27.78%_85.51%]" />
+      <Shop className="absolute inset-[56.35%_24.64%_27.78%_70.53%]" />
+      <div className="absolute inset-[57.14%_69.08%_28.74%_26.09%]" data-node-id="15:5527" data-name="Vector">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector1} />
+      </div>
+      <div className="absolute contents inset-[16.67%_46.66%_64.29%_46.86%]" data-node-id="15:5529" data-name="Group">
+        <div className="absolute inset-[25.48%_46.66%_73.1%_46.86%]" data-node-id="15:5530" data-name="Vector">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector2} />
+        </div>
+        <div className="absolute inset-[27.53%_50.32%_64.29%_47.18%]" data-node-id="15:5531" data-name="Vector">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector3} />
+        </div>
+        <div className="absolute inset-[16.73%_46.98%_75.09%_50.51%]" data-node-id="15:5532" data-name="Vector">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector4} />
+        </div>
+        <div className="absolute inset-[27.54%_47%_64.33%_50.51%]" data-node-id="15:5533" data-name="Vector">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector5} />
+        </div>
+        <div className="absolute inset-[16.67%_50.31%_75.15%_47.18%]" data-node-id="15:5534" data-name="Vector">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgVector6} />
+        </div>
+      </div>
+    </div>
+  );
+}
