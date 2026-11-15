@@ -19,6 +19,9 @@ export const OUT_OF_SCOPE_SECTION_IDS = [
   'arte-3d',
   'utilidade',
   'diario-da-cunhagem',
+  'ofertas',
+  'arquivos-baixados',
+  'suporte',
 ] as const
 
 export type OutOfScopeSection = (typeof OUT_OF_SCOPE_SECTION_IDS)[number]
@@ -39,4 +42,7 @@ export const OUT_OF_SCOPE_SECTIONS: Record<OutOfScopeSection, string> = {
   'arte-3d': 'Arte 3D',
   utilidade: 'Utilidade',
   'diario-da-cunhagem': 'Diário da Cunhagem',
+  ofertas: 'Ofertas',
+  'arquivos-baixados': 'Arquivos baixados',
+  suporte: 'Suporte',
 }
