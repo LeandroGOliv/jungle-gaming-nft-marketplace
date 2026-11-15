@@ -18,6 +18,7 @@ export const OUT_OF_SCOPE_SECTION_IDS = [
   'denunciar-item',
   'arte-3d',
   'utilidade',
+  'diario-da-cunhagem',
 ] as const
 
 export type OutOfScopeSection = (typeof OUT_OF_SCOPE_SECTION_IDS)[number]
@@ -37,4 +38,5 @@ export const OUT_OF_SCOPE_SECTIONS: Record<OutOfScopeSection, string> = {
   'denunciar-item': 'Denunciar item',
   'arte-3d': 'Arte 3D',
   utilidade: 'Utilidade',
+  'diario-da-cunhagem': 'Diário da Cunhagem',
 }

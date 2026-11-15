@@ -1,20 +1,12 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import { CatalogSection } from '@/components/catalog/catalog-section'
+import { HomeHero } from '@/components/catalog/home-hero'
+import { HomeBlog, HomePromos } from '@/components/catalog/home-showcase'
 import { MobileSearchBar } from '@/components/layout/mobile-search-bar'
 import { PageContainer } from '@/components/layout/page-container'
-import { NFT_CATEGORIES } from '@/types/nft'
-
-// Parâmetro inválido na URL é descartado em vez de quebrar a página. O router
-// faz JSON.parse dos valores, então `?busca=2024` digitado chega como número.
-const catalogSearchSchema = z.object({
-  busca: z
-    .union([z.string(), z.number()])
-    .transform(String)
-    .pipe(z.string().trim().min(1))
-    .optional()
-    .catch(undefined),
-  categoria: z.enum(NFT_CATEGORIES).optional().catch(undefined),
-})
+import { catalogSearchSchema, withFilters } from '@/utils/catalog-search'
+import type { CatalogSearch } from '@/utils/catalog-search'
 
 export const Route = createFileRoute('/_public/')({
   validateSearch: catalogSearchSchema,
@@ -23,23 +15,36 @@ export const Route = createFileRoute('/_public/')({
 })
 
 function Home() {
-  const { busca } = Route.useSearch()
+  const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  const changeFilters = (changes: Partial<CatalogSearch>) =>
+    void navigate({
+      search: (prev) => withFilters(prev, changes),
+      // Filtrar não deve jogar a página para o topo, longe do catálogo.
+      resetScroll: false,
+    })
 
   return (
-    <PageContainer className="pt-10 md:pt-8">
+    <PageContainer className="flex flex-col gap-6 pt-10 pb-16 md:gap-24 md:pt-8 md:pb-24">
+      {/* No mobile, a busca vem antes do hero, como no Figma. */}
       <MobileSearchBar
-        value={busca}
-        className="md:hidden"
-        onSearch={(term) =>
-          void navigate({
-            search: (prev) => ({ ...prev, busca: term || undefined }),
-          })
-        }
+        value={search.busca}
+        onSearch={(term) => changeFilters({ busca: term || undefined })}
+        onOpenFilters={() => setFiltersOpen(true)}
+        filtersExpanded={filtersOpen}
+        className="-mb-2 md:hidden"
       />
-      <h1 className="mt-4 text-2xl font-bold text-text-primary md:mt-0">
-        Marketplace de NFTs
-      </h1>
+      <HomeHero />
+      <CatalogSection
+        search={search}
+        onFiltersChange={changeFilters}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+      />
+      <HomePromos />
+      <HomeBlog />
     </PageContainer>
   )
 }

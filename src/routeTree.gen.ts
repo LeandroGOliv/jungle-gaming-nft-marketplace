@@ -19,6 +19,7 @@ import { Route as PublicCarrinhoRouteImport } from './routes/_public/carrinho'
 import { Route as PublicEmBreveRouteImport } from './routes/_public/em-breve'
 import { Route as PublicSimulacaoRouteImport } from './routes/_public/simulacao'
 import { Route as AuthenticatedPedidosPedidoIdRouteImport } from './routes/_authenticated/pedidos/$pedidoId'
+import { Route as PublicNftNftIdRouteImport } from './routes/_public/nft.$nftId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -69,6 +70,11 @@ const AuthenticatedPedidosPedidoIdRoute =
     path: '/pedidos/$pedidoId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const PublicNftNftIdRoute = PublicNftNftIdRouteImport.update({
+  id: '/nft/$nftId',
+  path: '/nft/$nftId',
+  getParentRoute: () => PublicRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/em-breve': typeof PublicEmBreveRoute
   '/simulacao': typeof PublicSimulacaoRoute
   '/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
+  '/nft/$nftId': typeof PublicNftNftIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/em-breve': typeof PublicEmBreveRoute
   '/simulacao': typeof PublicSimulacaoRoute
   '/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
+  '/nft/$nftId': typeof PublicNftNftIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_public/simulacao': typeof PublicSimulacaoRoute
   '/_public/': typeof PublicIndexRoute
   '/_authenticated/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
+  '/_public/nft/$nftId': typeof PublicNftNftIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/em-breve'
     | '/simulacao'
     | '/pedidos/$pedidoId'
+    | '/nft/$nftId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/em-breve'
     | '/simulacao'
     | '/pedidos/$pedidoId'
+    | '/nft/$nftId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/_public/simulacao'
     | '/_public/'
     | '/_authenticated/pedidos/$pedidoId'
+    | '/_public/nft/$nftId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -215,6 +227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPedidosPedidoIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_public/nft/$nftId': {
+      id: '/_public/nft/$nftId'
+      path: '/nft/$nftId'
+      fullPath: '/nft/$nftId'
+      preLoaderRoute: typeof PublicNftNftIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
   }
 }
 
@@ -241,6 +260,7 @@ interface PublicRouteChildren {
   PublicEmBreveRoute: typeof PublicEmBreveRoute
   PublicSimulacaoRoute: typeof PublicSimulacaoRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicNftNftIdRoute: typeof PublicNftNftIdRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -248,6 +268,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicEmBreveRoute: PublicEmBreveRoute,
   PublicSimulacaoRoute: PublicSimulacaoRoute,
   PublicIndexRoute: PublicIndexRoute,
+  PublicNftNftIdRoute: PublicNftNftIdRoute,
 }
 
 const PublicRouteWithChildren =

@@ -8,6 +8,8 @@
  * Radix marca o estado com `data-state="checked"`.
  */
 @custom-variant data-checked (&[data-state='checked']);
+@custom-variant data-horizontal (&[data-orientation='horizontal']);
+@custom-variant data-vertical (&[data-orientation='vertical']);
 
 /*
  * Tokens do Figma (docs/figma/tokens.md). O layout tem um único tema, escuro,
