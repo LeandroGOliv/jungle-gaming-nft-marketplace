@@ -3,7 +3,7 @@
 //
 // Uso: pnpm build && pnpm lighthouse
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 
@@ -12,8 +12,15 @@ const ORIGIN = `http://localhost:${PORT}`
 const RUNS = 3
 const OUT_DIR = 'lighthouse-reports'
 
-// Páginas exigidas pelo enunciado. O caminho do detalhe é ajustado quando a rota existir.
-const PAGES = [{ name: 'inicio', path: '/' }]
+// Medições brutas ficam fora do git; a medição mediana de cada página e perfil
+// e o resumo vão para DELIVERY_DIR, que é versionado.
+const DELIVERY_DIR = join('docs', 'lighthouse')
+
+// Páginas exigidas pelo enunciado, no cenário padrão dos mocks.
+const PAGES = [
+  { name: 'inicio', path: '/' },
+  { name: 'detalhe', path: '/nft/emerald-ape-042' },
+]
 const PROFILES = [
   { name: 'mobile', flags: [] },
   { name: 'desktop', flags: ['--preset=desktop'] },
@@ -78,6 +85,7 @@ function audit(url, profile, basePath) {
 }
 
 mkdirSync(OUT_DIR, { recursive: true })
+mkdirSync(DELIVERY_DIR, { recursive: true })
 const preview = spawn(
   process.execPath,
   [viteCli, 'preview', '--port', String(PORT), '--strictPort'],
@@ -90,6 +98,8 @@ const summary = {
   node: process.version,
   platform: `${process.platform} ${process.arch}`,
   runsPerTarget: RUNS,
+  conditions:
+    'vite preview do build de produção em localhost, cenário padrão dos mocks, Chrome headless; mobile com a emulação e o throttling padrão do Lighthouse (Moto G Power, 4G lento, CPU 4x), desktop com --preset=desktop',
   results: [],
 }
 let belowTarget = false
@@ -100,9 +110,21 @@ try {
   for (const page of PAGES) {
     for (const profile of PROFILES) {
       const reports = []
+      const basePaths = []
       for (let run = 1; run <= RUNS; run++) {
         const basePath = join(OUT_DIR, `${page.name}-${profile.name}-${run}`)
+        basePaths.push(basePath)
         reports.push(audit(ORIGIN + page.path, profile, basePath))
+      }
+
+      // A medição entregue é a de Performance mediana, a categoria que mais varia.
+      const perf = reports.map((r) => r.categories.performance.score)
+      const medianRun = perf.indexOf(median(perf))
+      for (const ext of ['report.html', 'report.json']) {
+        copyFileSync(
+          `${basePaths[medianRun]}.${ext}`,
+          join(DELIVERY_DIR, `${page.name}-${profile.name}.${ext}`),
+        )
       }
 
       const scores = Object.fromEntries(
@@ -124,6 +146,20 @@ try {
         profile: profile.name,
         scores,
         metrics,
+        runs: reports.map((r) => ({
+          scores: Object.fromEntries(
+            CATEGORIES.map((id) => [
+              id,
+              Math.round(r.categories[id].score * 100),
+            ]),
+          ),
+          metrics: Object.fromEntries(
+            Object.entries(METRICS).map(([label, id]) => [
+              label,
+              r.audits[id].numericValue,
+            ]),
+          ),
+        })),
       })
       summary.chromeVersion ??= reports[0].environment.hostUserAgent
     }
@@ -133,7 +169,7 @@ try {
 }
 
 writeFileSync(
-  join(OUT_DIR, 'summary.json'),
+  join(DELIVERY_DIR, 'summary.json'),
   JSON.stringify(summary, null, 2) + '\n',
 )
 

@@ -19,6 +19,16 @@ async function signIn(page: Page, credentials: typeof NOVA) {
 }
 
 /** Usuário dono de cada conexão Socket.IO aberta, segundo o servidor simulado. */
+/** Navega pela interface: o footer no desktop, a barra de abas no mobile. */
+async function openProfile(page: Page) {
+  const footer = page.getByRole('contentinfo')
+  await (
+    (await footer.isVisible())
+      ? footer.getByRole('link', { name: 'Meu perfil' })
+      : page.getByRole('link', { name: 'Minha conta' })
+  ).click()
+}
+
 async function realtimeUsers(page: Page) {
   return page.evaluate(() => window.__mocks!.getState().realtimeUsers)
 }
@@ -166,10 +176,7 @@ test.describe('login e cadastro', () => {
     // reconciliação já pediria login; aqui a expiração aparece na navegação.
     await mocks.setRealtimeAvailable(false)
     await mocks.expireSessions()
-    await page
-      .getByRole('contentinfo')
-      .getByRole('link', { name: 'Meu perfil' })
-      .click()
+    await openProfile(page)
 
     const dialog = authDialog(page)
     await expect(dialog).toBeVisible()
@@ -202,10 +209,7 @@ test.describe('login e cadastro', () => {
     await expect(page.getByText('Você saiu da sua conta.')).toBeAttached()
     await expect.poll(() => realtimeUsers(page)).toEqual([null])
 
-    await page
-      .getByRole('contentinfo')
-      .getByRole('link', { name: 'Meu perfil' })
-      .click()
+    await openProfile(page)
     await expect(authDialog(page)).toBeVisible()
     await signIn(page, RAFAEL)
 
