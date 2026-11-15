@@ -6,8 +6,6 @@ Implementação do desafio frontend de um marketplace de NFTs em React e TypeScr
 
 Não há backend: APIs, autenticação, carteiras, pagamentos e eventos em tempo real são simulados na camada de rede com MSW, inclusive na versão publicada.
 
-> Projeto em desenvolvimento. As seções marcadas como "em construção" são preenchidas conforme os fluxos são entregues.
-
 ## Stack
 
 | Responsabilidade     | Tecnologia                                  |
@@ -62,7 +60,7 @@ pnpm exec playwright install chromium
 | `pnpm test:e2e:ui` | Testes Playwright no modo interativo                                   |
 | `pnpm lighthouse`  | Auditoria Lighthouse (requer `pnpm build` antes); mediana de 3 rodadas |
 
-O relatório HTML do Playwright é gerado em `playwright-report/` e os traces das falhas em `test-results/`. Os relatórios do Lighthouse ficam em `lighthouse-reports/`.
+O relatório HTML do Playwright é gerado em `playwright-report/` (`pnpm exec playwright show-report`) e os traces das falhas em `test-results/`. A auditoria Lighthouse grava as 12 medições brutas em `lighthouse-reports/` (fora do git) e a medição mediana de cada página e perfil, com o resumo, em [`docs/lighthouse/`](docs/lighthouse/README.md).
 
 ## Variáveis de ambiente
 
@@ -143,6 +141,41 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 
 - **Pedido (compra completa, recusa, timeout, queda):** entre como Nova num dos cenários `order-*` (ou `checkout`, que confirma sozinho), abra `/pagamento`, conecte a MetaMask e clique em "Confirmar compra". O resultado abre em `/pagamento?pedido=<id>`. Em `order-timeout`, a confirmação aparece depois dos 15 s do timeout, com o mesmo pedido. Em `order-pending`, decida o pedido em `/simulacao` > "Pedidos pendentes" ou recarregue a página para ver que nenhuma outra compra é criada.
 
+## Testes
+
+Os testes E2E rodam no Chromium, em dois projetos: `desktop` (1440 × 900) e `mobile` (390 × 844, Pixel 7). O Playwright gera o build de produção e o serve com `vite preview`, então os testes exercitam o mesmo artefato do deploy. Cada teste parte do estado inicial de um cenário, sem latência, e controla relógio, latência e eventos pela API `window.__mocks`. Os eventos em tempo real passam pelo `socket.io-client` e as chamadas REST pelos handlers do MSW.
+
+| Cenário do enunciado                                     | Onde                                                                  |
+| -------------------------------------------------------- | --------------------------------------------------------------------- |
+| 1. Busca, filtros, ordenação, paginação e histórico      | `e2e/catalog.spec.ts`                                                 |
+| 2. Acesso direto ao detalhe e recurso inexistente        | `e2e/nft-detail.spec.ts`                                              |
+| 3. Cadastro, login, expiração, logout e troca de usuário | `e2e/auth.spec.ts`, `e2e/isolation.spec.ts`                           |
+| 4. Favoritos, falha de mutation e recuperação            | `e2e/nft-detail.spec.ts`                                              |
+| 5. Carrinho, quantidades, remoção, cupom e persistência  | `e2e/cart.spec.ts`                                                    |
+| 6. Compra completa, do catálogo ao recibo                | `e2e/orders.spec.ts`                                                  |
+| 7. Falha de pagamento, clique repetido e timeout         | `e2e/orders.spec.ts`                                                  |
+| 8. Perfil, avatar, senha e carteiras, com validação      | `e2e/profile.spec.ts`, `e2e/wallets.spec.ts`                          |
+| 9. Preço e disponibilidade via Socket.IO no checkout     | `e2e/checkout.spec.ts`, `e2e/realtime.spec.ts`                        |
+| 10. Eventos duplicados ou antigos, desconexão e pendente | `e2e/realtime.spec.ts`, `e2e/orders.spec.ts`, `e2e/isolation.spec.ts` |
+| 11. Teclado, foco de diálogos e validação de formulários | `e2e/keyboard.spec.ts`, `e2e/layout.spec.ts`, `e2e/checkout.spec.ts`  |
+| 12. Skeletons, falha e recuperação com nova tentativa    | `e2e/catalog.spec.ts`, `e2e/cart.spec.ts`, `e2e/nft-detail.spec.ts`   |
+
+### Regressão visual
+
+`e2e/visual.spec.ts` compara a Início, o detalhe, o carrinho e o pagamento nos dois viewports com as baselines versionadas em `e2e/visual.spec.ts-snapshots/`. Os dados vêm das fixtures dos cenários `default` e `checkout`, sem latência, e a captura espera fontes, imagens e o fim dos skeletons, com animações desligadas.
+
+As baselines foram geradas no Windows (sufixo `-win32`). A renderização de fontes muda entre sistemas operacionais, então o CI (Linux) roda a suíte sem essas comparações (`--grep-invert @visual`). Em outro sistema, gere as baselines locais antes de comparar:
+
+```bash
+pnpm exec playwright test e2e/visual.spec.ts --update-snapshots
+```
+
+## Auditoria Lighthouse
+
+`pnpm build && pnpm lighthouse` audita a Início e o detalhe do NFT (`/nft/emerald-ape-042`) nos perfis mobile e desktop. Faz 3 medições por página e perfil contra o build de produção, com os mocks no cenário padrão e sem nenhuma simplificação para a auditoria. O script reporta a mediana de cada categoria e de LCP, CLS e TBT, e termina com erro se alguma categoria ficar abaixo da meta.
+
+Resultados, versões das ferramentas, ambiente, condições de execução e a análise do que ficou abaixo da meta estão em [`docs/lighthouse/README.md`](docs/lighthouse/README.md).
+
 ## Estrutura
 
 ```
@@ -156,22 +189,23 @@ src/
 ├── lib/          # configuração: ambiente, clientes Axios, query client, socket
 ├── routes/       # rotas baseadas em arquivo
 └── mocks/        # handlers MSW, fixtures, cenários e simulação de Socket.IO
-e2e/              # testes Playwright
+e2e/              # testes Playwright e baselines visuais
 scripts/          # auditoria Lighthouse
+docs/lighthouse/  # relatórios entregues da auditoria
 ```
 
 ## Qualidade e integração contínua
 
 - Antes de cada `git push`, um hook roda a verificação de tipos e o lint.
-- Em pull requests e na `main`, o GitHub Actions roda os testes unitários e E2E; o merge depende desse resultado.
+- Em pull requests e na `main`, o GitHub Actions roda os testes unitários e E2E (sem a regressão visual, ver [Regressão visual](#regressão-visual)) e publica o relatório e os traces como artefato; o merge depende desse resultado.
 
 ## Deploy
 
-Publicado na Vercel a partir da `main`. O arquivo `vercel.json` redireciona todas as rotas para a aplicação, para que acesso direto e refresh funcionem.
+Publicado na Vercel a partir da `main`, em https://jungle-gaming-nft-marketplace.leandrogoliv.dev.br/. O arquivo `vercel.json` redireciona todas as rotas para a aplicação, para que acesso direto e refresh funcionem. A versão publicada roda o mesmo build, com os mocks e o tempo real simulado, e não depende de nenhum serviço externo.
 
 ## Documentação de arquitetura
 
-A política de sessão e os contratos de autenticação estão em [`ARCHITECTURE.md`](ARCHITECTURE.md#sessão-e-autenticação). Os demais contratos REST e de eventos, o estado do carrinho, a estratégia de cache e a reconciliação entre REST e Socket.IO entram no mesmo arquivo conforme os fluxos forem entregues.
+[`ARCHITECTURE.md`](ARCHITECTURE.md) documenta os contratos REST e de eventos de cada fluxo, a política de sessão, o estado do carrinho, a estratégia de cache, retries e sincronização, a reconciliação entre REST e Socket.IO, o transporte dos mocks e suas limitações, as decisões de UX, o desempenho e os desvios do Figma.
 
 ## Desvio do Figma: avatar no header
 
