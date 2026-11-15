@@ -88,7 +88,9 @@ O estado simulado (catálogo, usuários, carteiras, favoritos, carrinhos e pedid
 | Nova Sato   | `nova@colecionador.test`   | `Kurio@2026` | Carteira principal na Polygon, 3 favoritos, 1 pedido confirmado         |
 | Rafael Lima | `rafael@colecionador.test` | `Selva#2026` | Carteiras principal e secundária, 1 item no carrinho, 1 pedido recusado |
 
-As senhas não ficam salvas em claro: os mocks guardam só o hash SHA-256 com salt.
+As senhas não ficam salvas em claro: os mocks guardam só o hash SHA-256 com salt. O navegador guarda apenas o token opaco da sessão, que vale 2 horas.
+
+Para entrar, use "Entrar" no header (desktop) ou "Minha conta" na tab bar (mobile), ou abra qualquer tela com `?auth=entrar` (`?auth=cadastro` para criar uma conta). O login abre como modal sobre a tela atual; ao acessar uma tela privada (`/perfil`, `/carteiras`, `/pagamento`, `/pedidos/<id>`) sem sessão, ele abre sobre a Início e, depois de entrar, volta ao destino. No cadastro, `admin`, `kurio`, `suporte` e `root` são nomes de usuário reservados pela API, para exercitar um erro de validação vindo do servidor.
 
 ### Seleção e reset de cenários
 
@@ -96,18 +98,19 @@ Há três formas de controlar a simulação, todas sobre o mesmo estado:
 
 - **Página `/simulacao`**: mostra o estado atual e permite trocar de cenário, restaurar os dados, mudar a latência, derrubar as conexões em tempo real e disparar uma requisição de teste.
 - **URL**: abra qualquer rota com `?scenario=<cenário>` e/ou `?latency=<latência>`, por exemplo `/?scenario=empty&latency=slow`. Os parâmetros são aplicados no carregamento e removidos da URL, para o refresh não repetir o reset.
-- **Console ou testes**: `window.__mocks` expõe `reset()`, `selectScenario()`, `setLatency()`, `addFault()`, `setFaults()`, `setRealtimeAvailable()`, `updateNft()` e `emit()`.
+- **Console ou testes**: `window.__mocks` expõe `reset()`, `selectScenario()`, `setLatency()`, `addFault()`, `setFaults()`, `setRealtimeAvailable()`, `updateNft()`, `emit()` e `expireSessions()`.
 
 Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial do cenário e descarta as falhas adicionadas. A latência escolhida é preservada no reset.
 
-| Cenário        | O que acontece                                                                    |
-| -------------- | --------------------------------------------------------------------------------- |
-| `default`      | Fixtures completas, rede saudável com latência de 200–400 ms                      |
-| `empty`        | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
-| `offline`      | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
-| `timeout`      | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
-| `server-error` | Toda chamada à API responde 503                                                   |
-| `flaky`        | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
+| Cenário         | O que acontece                                                                    |
+| --------------- | --------------------------------------------------------------------------------- |
+| `default`       | Fixtures completas, rede saudável com latência de 200–400 ms                      |
+| `empty`         | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
+| `offline`       | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
+| `timeout`       | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
+| `server-error`  | Toda chamada à API responde 503                                                   |
+| `flaky`         | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
+| `short-session` | Fixtures completas; a sessão expira 1 minuto após o login                         |
 
 | Latência       | Comportamento                                                                |
 | -------------- | ---------------------------------------------------------------------------- |
@@ -124,8 +127,11 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 - **Respostas fora de ordem e carregamento lento**: escolha a latência `out-of-order` ou `slow`.
 - **Erro HTTP pontual** (qualquer status 401, 403, 404, 409, 422, 500 ou 503 em um endpoint): pelo console, por exemplo `window.__mocks.addFault({ id: 'fav', method: 'POST', path: '/favorites', effect: { kind: 'http', status: 503 }, times: 1 })`.
 - **Queda do tempo real**: em `/simulacao`, "Derrubar conexões" e depois "Restabelecer conexões".
+- **Sessão expirada durante a navegação**: entre, abra `/simulacao` e use "Expirar sessões" (ou aplique `short-session` e espere 1 minuto). A próxima tela privada, ou a volta à aba, pede login de novo com o aviso de sessão expirada, e depois do login o colecionador volta à tela em que estava.
+- **Conflito de cadastro**: crie uma conta com `nova@colecionador.test` ou com o usuário `novasato`; o erro aparece no próprio campo.
+- **Login social e recuperação de senha**: os botões avisam que não estão disponíveis, sem simular sucesso.
 
-Os cenários específicos de cada fluxo (sessão expirada, cupom expirado, pagamento recusado etc.) entram junto com as telas correspondentes.
+Os cenários específicos dos demais fluxos (cupom expirado, pagamento recusado etc.) entram junto com as telas correspondentes.
 
 ## Estrutura
 
@@ -155,4 +161,4 @@ Publicado na Vercel a partir da `main`. O arquivo `vercel.json` redireciona toda
 
 ## Documentação de arquitetura
 
-Contratos REST e de eventos, política de sessão, estado do carrinho, estratégia de cache e reconciliação entre REST e Socket.IO serão registrados em `ARCHITECTURE.md` conforme os fluxos forem entregues.
+A política de sessão e os contratos de autenticação estão em [`ARCHITECTURE.md`](ARCHITECTURE.md#sessão-e-autenticação). Os demais contratos REST e de eventos, o estado do carrinho, a estratégia de cache e a reconciliação entre REST e Socket.IO entram no mesmo arquivo conforme os fluxos forem entregues.

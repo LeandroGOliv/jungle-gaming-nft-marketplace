@@ -1,3 +1,4 @@
+import { createAuthHandlers } from './handlers/auth'
 import { createSimulationHandlers } from './handlers/simulation'
 import type { MockRuntime } from './runtime'
 
@@ -9,6 +10,7 @@ export function createHandlers(apiUrl: string, runtime: MockRuntime) {
   return [
     runtime.networkHandler,
     ...createSimulationHandlers(apiUrl, runtime),
+    ...createAuthHandlers(apiUrl, runtime),
     runtime.realtimeHandler,
   ]
 }

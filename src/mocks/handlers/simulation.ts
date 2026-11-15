@@ -48,6 +48,11 @@ export function createSimulationHandlers(apiUrl: string, runtime: MockRuntime) {
       }
     }),
 
+    http.post(`${base}/expire-sessions`, () => {
+      control.expireSessions()
+      return HttpResponse.json(control.getState())
+    }),
+
     // Sonda da rede simulada: passa pela latência e pelas falhas do cenário.
     http.get(`${apiUrl}/health`, () =>
       HttpResponse.json<HealthStatus>({

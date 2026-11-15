@@ -9,6 +9,11 @@ export function getApiError(error: unknown): ApiError | null {
   return isApiError(body) ? body : null
 }
 
+/** Resposta 401: sessão ausente, inválida ou expirada. */
+export function isUnauthorized(error: unknown) {
+  return isAxiosError(error) && error.response?.status === 401
+}
+
 /** Mensagem curta para o usuário, distinguindo timeout e falta de conexão. */
 export function describeRequestError(error: unknown) {
   const apiError = getApiError(error)

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   checkHealth,
+  expireSessions,
   getSimulation,
   resetSimulation,
   updateSimulation,
@@ -40,6 +41,15 @@ export function useResetSimulation() {
         predicate: (query) => query.queryKey[0] !== simulationKeys.state[0],
       })
     },
+  })
+}
+
+/** Vence as sessões abertas; a próxima chamada autenticada recebe 401. */
+export function useExpireSessions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: expireSessions,
+    onSuccess: (state) => queryClient.setQueryData(simulationKeys.state, state),
   })
 }
 

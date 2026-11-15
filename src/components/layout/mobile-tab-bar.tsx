@@ -43,7 +43,7 @@ const TABS: Array<TabItem> = [
   {
     label: 'Minha conta',
     link: { to: '/perfil' },
-    paths: ['/perfil', '/carteiras', '/login'],
+    paths: ['/perfil', '/carteiras'],
     icon: { src: '/icons/tab-user.svg', width: 20, height: 20 },
     left: 'left-[87.923%]',
   },

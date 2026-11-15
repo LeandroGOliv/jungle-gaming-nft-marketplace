@@ -12,6 +12,7 @@ import {
   isScenarioId,
   scenarioSummaries,
 } from './scenarios'
+import { DEFAULT_SESSION_TTL_MS, lookupSession } from './sessions'
 import { STORAGE_PREFIX, readJson, writeJson } from './storage'
 import type { KeyValueStorage } from './storage'
 import type {
@@ -101,6 +102,11 @@ export function createMockRuntime({
   const hub = createRealtimeHub({
     path: socketPath,
     isAvailable: () => persisted.settings.realtimeAvailable,
+    resolveUser: (auth) => {
+      const token = typeof auth?.token === 'string' ? auth.token : null
+      const lookup = lookupSession(store.state, token, Date.now())
+      return lookup.ok ? lookup.user.id : null
+    },
   })
   bridgeStoreToRealtime(store, hub)
 
@@ -159,6 +165,17 @@ export function createMockRuntime({
     })
   }
 
+  const sessionTtlMs = () =>
+    getScenario(persisted.settings.scenarioId).sessionTtlMs ??
+    DEFAULT_SESSION_TTL_MS
+
+  function expireSessions() {
+    const now = new Date().toISOString()
+    store.write((db) => {
+      for (const session of db.sessions) session.expiresAt = now
+    })
+  }
+
   function getState(): SimulationState {
     return {
       ...structuredClone(persisted.settings),
@@ -171,6 +188,8 @@ export function createMockRuntime({
         orders: store.state.orders.length,
       },
       realtimeConnections: hub.connectionCount(),
+      realtimeUsers: hub.connectionUsers(),
+      sessionTtlMs: sessionTtlMs(),
     }
   }
 
@@ -195,6 +214,7 @@ export function createMockRuntime({
       update({ realtimeAvailable: available }),
     updateNft,
     emit: (event, payload) => hub.broadcast(event, payload),
+    expireSessions,
   }
 
   const networkHandler = createNetworkHandler({
@@ -211,6 +231,7 @@ export function createMockRuntime({
     store,
     control,
     update,
+    sessionTtlMs,
     networkHandler,
     realtimeHandler: hub.handler,
   }

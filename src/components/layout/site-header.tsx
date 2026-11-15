@@ -72,9 +72,9 @@ export function SiteHeader({ navSection, divider }: SiteHeaderProps) {
             >
               <img src="/icons/search.svg" alt="" width={20} height={20} />
             </Link>
-            {/* A contagem e a sessão entram com as consultas de carrinho e de sessão. */}
+            {/* A contagem entra com a consulta do carrinho. */}
             <CartIndicator />
-            <AccountIndicator status="anonymous" />
+            <AccountIndicator />
           </div>
         </div>
       </PageContainer>

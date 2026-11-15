@@ -20,6 +20,8 @@ interface Scenario extends ScenarioSummary {
   latency: LatencyPresetId
   faults: Array<FaultRule>
   realtimeAvailable: boolean
+  /** Validade das sessões abertas no cenário; ausente usa o padrão de 2 h. */
+  sessionTtlMs?: number
   /** Ajusta os dados iniciais; ausente usa as fixtures como estão. */
   prepare?: (db: MockDb) => void
 }
@@ -93,6 +95,16 @@ const SCENARIOS: Array<Scenario> = [
       },
     ],
     realtimeAvailable: true,
+  },
+  {
+    id: 'short-session',
+    label: 'Sessão curta (1 min)',
+    description:
+      'Fixtures completas; a sessão expira 1 minuto após o login, para exercitar a expiração durante a navegação.',
+    latency: 'default',
+    faults: [],
+    realtimeAvailable: true,
+    sessionTtlMs: 60_000,
   },
 ]
 

@@ -11,14 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as PublicRouteImport } from './routes/_public'
-import { Route as UnauthenticatedRouteImport } from './routes/_unauthenticated'
 import { Route as AuthenticatedCarteirasRouteImport } from './routes/_authenticated/carteiras'
+import { Route as AuthenticatedPagamentoRouteImport } from './routes/_authenticated/pagamento'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicCarrinhoRouteImport } from './routes/_public/carrinho'
 import { Route as PublicEmBreveRouteImport } from './routes/_public/em-breve'
 import { Route as PublicSimulacaoRouteImport } from './routes/_public/simulacao'
-import { Route as UnauthenticatedLoginRouteImport } from './routes/_unauthenticated/login'
+import { Route as AuthenticatedPedidosPedidoIdRouteImport } from './routes/_authenticated/pedidos/$pedidoId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -28,13 +28,14 @@ const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UnauthenticatedRoute = UnauthenticatedRouteImport.update({
-  id: '/_unauthenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedCarteirasRoute = AuthenticatedCarteirasRouteImport.update({
   id: '/carteiras',
   path: '/carteiras',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPagamentoRoute = AuthenticatedPagamentoRouteImport.update({
+  id: '/pagamento',
+  path: '/pagamento',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
@@ -62,80 +63,84 @@ const PublicSimulacaoRoute = PublicSimulacaoRouteImport.update({
   path: '/simulacao',
   getParentRoute: () => PublicRoute,
 } as any)
-const UnauthenticatedLoginRoute = UnauthenticatedLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => UnauthenticatedRoute,
-} as any)
+const AuthenticatedPedidosPedidoIdRoute =
+  AuthenticatedPedidosPedidoIdRouteImport.update({
+    id: '/pedidos/$pedidoId',
+    path: '/pedidos/$pedidoId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/carteiras': typeof AuthenticatedCarteirasRoute
+  '/pagamento': typeof AuthenticatedPagamentoRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/carrinho': typeof PublicCarrinhoRoute
   '/em-breve': typeof PublicEmBreveRoute
   '/simulacao': typeof PublicSimulacaoRoute
-  '/login': typeof UnauthenticatedLoginRoute
+  '/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
   '/carteiras': typeof AuthenticatedCarteirasRoute
+  '/pagamento': typeof AuthenticatedPagamentoRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/carrinho': typeof PublicCarrinhoRoute
   '/em-breve': typeof PublicEmBreveRoute
   '/simulacao': typeof PublicSimulacaoRoute
-  '/login': typeof UnauthenticatedLoginRoute
+  '/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/_unauthenticated': typeof UnauthenticatedRouteWithChildren
   '/_authenticated/carteiras': typeof AuthenticatedCarteirasRoute
+  '/_authenticated/pagamento': typeof AuthenticatedPagamentoRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_public/carrinho': typeof PublicCarrinhoRoute
   '/_public/em-breve': typeof PublicEmBreveRoute
   '/_public/simulacao': typeof PublicSimulacaoRoute
-  '/_unauthenticated/login': typeof UnauthenticatedLoginRoute
   '/_public/': typeof PublicIndexRoute
+  '/_authenticated/pedidos/$pedidoId': typeof AuthenticatedPedidosPedidoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/carteiras'
+    | '/pagamento'
     | '/perfil'
     | '/carrinho'
     | '/em-breve'
     | '/simulacao'
-    | '/login'
+    | '/pedidos/$pedidoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/carteiras'
+    | '/pagamento'
     | '/perfil'
     | '/carrinho'
     | '/em-breve'
     | '/simulacao'
-    | '/login'
+    | '/pedidos/$pedidoId'
   id:
     | '__root__'
     | '/_authenticated'
     | '/_public'
-    | '/_unauthenticated'
     | '/_authenticated/carteiras'
+    | '/_authenticated/pagamento'
     | '/_authenticated/perfil'
     | '/_public/carrinho'
     | '/_public/em-breve'
     | '/_public/simulacao'
-    | '/_unauthenticated/login'
     | '/_public/'
+    | '/_authenticated/pedidos/$pedidoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
-  UnauthenticatedRoute: typeof UnauthenticatedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -154,18 +159,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_unauthenticated': {
-      id: '/_unauthenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof UnauthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/carteiras': {
       id: '/_authenticated/carteiras'
       path: '/carteiras'
       fullPath: '/carteiras'
       preLoaderRoute: typeof AuthenticatedCarteirasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pagamento': {
+      id: '/_authenticated/pagamento'
+      path: '/pagamento'
+      fullPath: '/pagamento'
+      preLoaderRoute: typeof AuthenticatedPagamentoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/perfil': {
@@ -203,24 +208,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicSimulacaoRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_unauthenticated/login': {
-      id: '/_unauthenticated/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof UnauthenticatedLoginRouteImport
-      parentRoute: typeof UnauthenticatedRoute
+    '/_authenticated/pedidos/$pedidoId': {
+      id: '/_authenticated/pedidos/$pedidoId'
+      path: '/pedidos/$pedidoId'
+      fullPath: '/pedidos/$pedidoId'
+      preLoaderRoute: typeof AuthenticatedPedidosPedidoIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedCarteirasRoute: typeof AuthenticatedCarteirasRoute
+  AuthenticatedPagamentoRoute: typeof AuthenticatedPagamentoRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedPedidosPedidoIdRoute: typeof AuthenticatedPedidosPedidoIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCarteirasRoute: AuthenticatedCarteirasRoute,
+  AuthenticatedPagamentoRoute: AuthenticatedPagamentoRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedPedidosPedidoIdRoute: AuthenticatedPedidosPedidoIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -244,22 +253,9 @@ const PublicRouteChildren: PublicRouteChildren = {
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
-interface UnauthenticatedRouteChildren {
-  UnauthenticatedLoginRoute: typeof UnauthenticatedLoginRoute
-}
-
-const UnauthenticatedRouteChildren: UnauthenticatedRouteChildren = {
-  UnauthenticatedLoginRoute: UnauthenticatedLoginRoute,
-}
-
-const UnauthenticatedRouteWithChildren = UnauthenticatedRoute._addFileChildren(
-  UnauthenticatedRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
-  UnauthenticatedRoute: UnauthenticatedRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

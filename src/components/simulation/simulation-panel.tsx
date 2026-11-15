@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  useExpireSessions,
   useHealthCheck,
   useResetSimulation,
   useSimulation,
@@ -26,6 +27,13 @@ function formatDateTime(iso: string) {
     dateStyle: 'short',
     timeStyle: 'medium',
   }).format(new Date(iso))
+}
+
+function formatDuration(ms: number) {
+  const minutes = Math.round(ms / 60_000)
+  return minutes >= 60 && minutes % 60 === 0
+    ? `${minutes / 60} h`
+    : `${minutes} min`
 }
 
 export function SimulationPanel() {
@@ -79,12 +87,13 @@ function PanelSkeleton() {
 function SimulationControls({ state }: { state: SimulationState }) {
   const reset = useResetSimulation()
   const update = useUpdateSimulation()
+  const expire = useExpireSessions()
   const [scenario, setScenario] = useState<ScenarioId>(state.scenarioId)
   const activeScenario = state.scenarios.find((s) => s.id === state.scenarioId)
   const activeLatency = state.latencyPresets.find((p) =>
     sameProfile(p.profile, state.latency),
   )
-  const feedbackError = reset.error ?? update.error
+  const feedbackError = reset.error ?? update.error ?? expire.error
 
   return (
     <>
@@ -204,14 +213,37 @@ function SimulationControls({ state }: { state: SimulationState }) {
         </Button>
       </section>
 
+      <section
+        aria-labelledby="simulation-session"
+        className="flex flex-col items-start gap-4 rounded-lg border border-border bg-card p-6"
+      >
+        <h2 id="simulation-session" className="text-lg font-medium">
+          Sessão
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          As sessões valem {formatDuration(state.sessionTtlMs)} neste cenário.
+          Expirar agora faz a próxima ação autenticada pedir login de novo,
+          mantendo a tela em que o colecionador estava.
+        </p>
+        <Button
+          variant="outline"
+          disabled={expire.isPending}
+          onClick={() => expire.mutate()}
+        >
+          Expirar sessões
+        </Button>
+      </section>
+
       <HealthProbe />
 
       <p role="status" aria-live="polite" className="text-sm">
         {feedbackError
           ? describeRequestError(feedbackError)
-          : reset.isSuccess
-            ? 'Dados restaurados.'
-            : ''}
+          : expire.isSuccess
+            ? 'Sessões expiradas.'
+            : reset.isSuccess
+              ? 'Dados restaurados.'
+              : ''}
       </p>
     </>
   )

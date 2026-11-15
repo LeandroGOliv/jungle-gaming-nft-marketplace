@@ -20,6 +20,8 @@ interface RealtimeConnection {
   close: () => void
   /** `auth` enviado pelo cliente no handshake; o binding não o expõe. */
   auth: Record<string, unknown> | null
+  /** Usuário dono da conexão, resolvido no handshake; `null` é visitante. */
+  userId: string | null
 }
 
 export interface RealtimeHub {
@@ -28,6 +30,11 @@ export interface RealtimeHub {
   broadcast: (event: RealtimeEventName, payload: unknown) => void
   setAvailable: (available: boolean) => void
   connectionCount: () => number
+  /**
+   * Dono de cada conexão aberta, como resolvido no handshake. Não muda se a
+   * sessão terminar depois: uma conexão esquecida continua visível.
+   */
+  connectionUsers: () => Array<string | null>
 }
 
 function readConnectAuth(data: unknown) {
@@ -46,6 +53,8 @@ function readConnectAuth(data: unknown) {
 export function createRealtimeHub(options: {
   path: string
   isAvailable: () => boolean
+  /** Resolve o usuário pelo `auth` do handshake. */
+  resolveUser: (auth: Record<string, unknown> | null) => string | null
 }): RealtimeHub {
   const connections = new Set<RealtimeConnection>()
   // O caminho precisa ser o mesmo de `env.socketPath`. Um caminho próprio evita
@@ -63,12 +72,16 @@ export function createRealtimeHub(options: {
       emit: (event, ...data) => io.client.emit(event, ...data),
       close: () => connection.client.close(),
       auth: null,
+      userId: null,
     }
     connections.add(entry)
 
     connection.client.addEventListener('message', (event) => {
       const auth = readConnectAuth(event.data)
-      if (auth !== undefined) entry.auth = auth
+      if (auth !== undefined) {
+        entry.auth = auth
+        entry.userId = options.resolveUser(auth)
+      }
     })
 
     // O binding não implementa o heartbeat; sem ele o cliente encerra a
@@ -94,6 +107,7 @@ export function createRealtimeHub(options: {
       connections.clear()
     },
     connectionCount: () => connections.size,
+    connectionUsers: () => [...connections].map((c) => c.userId),
   }
 }
 
