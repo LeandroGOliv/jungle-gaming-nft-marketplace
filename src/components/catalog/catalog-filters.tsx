@@ -127,7 +127,7 @@ function OptionList({
               aria-pressed={active}
               onClick={() => onSelect(active ? undefined : option.value)}
               className={cn(
-                'focus-ring flex w-full items-start justify-between rounded-sm text-[15px] leading-10 hover:text-text-accent',
+                'focus-ring flex cursor-pointer w-full items-start justify-between rounded-sm text-[15px] leading-10 hover:text-text-accent',
                 active ? 'text-text-accent' : 'text-text-secondary',
               )}
             >
@@ -187,7 +187,7 @@ function PriceRange({
             draft[1] >= upper ? undefined : max,
           )
         }
-        className="focus-ring self-start rounded-md bg-primary px-3 py-2 text-base leading-5 font-bold text-ink hover:bg-primary/90"
+        className="focus-ring cursor-pointer self-start rounded-md bg-primary px-3 py-2 text-base leading-5 font-bold text-ink hover:bg-primary/90"
       >
         Aplicar
       </button>
