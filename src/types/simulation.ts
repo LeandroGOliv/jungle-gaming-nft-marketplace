@@ -1,4 +1,4 @@
-import type { ApiErrorStatus } from './api'
+import type { ApiErrorReason, ApiErrorStatus } from './api'
 import type { Nft } from './nft'
 import type { RealtimeEventName } from './realtime'
 
@@ -20,7 +20,7 @@ export type LatencyPresetId =
   'none' | 'default' | 'slow' | 'variable' | 'out-of-order'
 
 export type FaultEffect =
-  | { kind: 'http'; status: ApiErrorStatus; reason?: string }
+  | { kind: 'http'; status: ApiErrorStatus; reason?: ApiErrorReason }
   /** Falha de rede: o Axios recebe erro sem resposta. */
   | { kind: 'network-error' }
   /** A resposta nunca chega; vale o timeout do cliente. */
@@ -40,7 +40,13 @@ export interface FaultRule {
 }
 
 export type ScenarioId =
-  'default' | 'empty' | 'offline' | 'timeout' | 'server-error' | 'flaky'
+  | 'default'
+  | 'empty'
+  | 'offline'
+  | 'timeout'
+  | 'server-error'
+  | 'flaky'
+  | 'short-session'
 
 export interface ScenarioSummary {
   id: ScenarioId
@@ -70,6 +76,10 @@ export interface SimulationState extends SimulationSettings {
   resetAt: string
   counts: { nfts: number; users: number; orders: number }
   realtimeConnections: number
+  /** Dono de cada conexão Socket.IO aberta, resolvido no handshake; `null` é visitante. */
+  realtimeUsers: Array<string | null>
+  /** Validade das sessões criadas no cenário atual. */
+  sessionTtlMs: number
 }
 
 /** Corpo de `PATCH /__simulation`: só os campos enviados mudam, sem reset. */
@@ -115,6 +125,8 @@ export interface MockControlApi {
   updateNft: (id: string, patch: NftPatch) => void
   /** Emite um evento cru, para duplicatas e eventos antigos. */
   emit: (event: RealtimeEventName, payload: unknown) => void
+  /** Vence todas as sessões abertas: a próxima chamada autenticada recebe 401. */
+  expireSessions: () => void
 }
 
 declare global {

@@ -1,6 +1,6 @@
 import { HttpResponse } from 'msw'
 import { API_ERROR_CODES } from '@/types/api'
-import type { ApiError, ApiErrorStatus } from '@/types/api'
+import type { ApiError, ApiErrorReason, ApiErrorStatus } from '@/types/api'
 
 const DEFAULT_MESSAGES: Record<ApiErrorStatus, string> = {
   401: 'Sua sessão expirou. Entre novamente para continuar.',
@@ -14,7 +14,7 @@ const DEFAULT_MESSAGES: Record<ApiErrorStatus, string> = {
 
 interface ApiErrorOptions {
   message?: string
-  reason?: string
+  reason?: ApiErrorReason
   fieldErrors?: Record<string, string>
 }
 

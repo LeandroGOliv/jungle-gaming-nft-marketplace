@@ -29,6 +29,13 @@ export async function resetSimulation(request: SimulationResetRequest = {}) {
   return data
 }
 
+export async function expireSessions() {
+  const { data } = await publicClientApi.post<SimulationState>(
+    '/__simulation/expire-sessions',
+  )
+  return data
+}
+
 export async function checkHealth() {
   const { data } = await publicClientApi.get<HealthStatus>('/health')
   return data

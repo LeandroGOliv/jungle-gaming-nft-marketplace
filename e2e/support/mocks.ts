@@ -71,6 +71,11 @@ export class Mocks {
     )
   }
 
+  /** Vence todas as sessões: a próxima chamada autenticada recebe 401. */
+  expireSessions() {
+    return this.page.evaluate(() => window.__mocks!.expireSessions())
+  }
+
   /** Evento cru, para duplicatas e versões antigas. */
   emit(event: RealtimeEventName, payload: unknown) {
     return this.page.evaluate(
