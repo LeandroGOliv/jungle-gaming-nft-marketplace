@@ -13,7 +13,10 @@ test.describe('layout base', () => {
       page.getByRole('heading', { level: 1, name: 'Página não encontrada' }),
     ).toBeVisible()
     await expect(page.getByText('/colecao/nao-existe')).toBeVisible()
-    await expect(page.getByRole('contentinfo')).toBeVisible()
+    // No mobile o footer não aparece; a navegação fica na barra de abas.
+    if (!isMobile(page.viewportSize()?.width)) {
+      await expect(page.getByRole('contentinfo')).toBeVisible()
+    }
 
     await page.getByRole('link', { name: 'Voltar ao início' }).click()
     await expect(page).toHaveURL(/\/$/)
@@ -118,6 +121,10 @@ test.describe('layout base', () => {
     page,
     mocks,
   }) => {
+    test.skip(
+      isMobile(page.viewportSize()?.width),
+      'O footer não aparece no mobile.',
+    )
     await mocks.goto('/')
     const footer = page.getByRole('contentinfo')
 
@@ -239,6 +246,10 @@ test.describe('layout base', () => {
   })
 
   test('newsletter não simula cadastro', async ({ page, mocks }) => {
+    test.skip(
+      isMobile(page.viewportSize()?.width),
+      'O footer não aparece no mobile.',
+    )
     await mocks.goto('/')
     const footer = page.getByRole('contentinfo')
 

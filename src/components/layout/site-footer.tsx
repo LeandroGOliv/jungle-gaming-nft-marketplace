@@ -80,10 +80,10 @@ const SOCIAL_LINKS = [
 const linkClass =
   'focus-ring rounded-sm underline-offset-4 hover:text-text-accent hover:underline'
 
-/** Footer comum a todas as telas; abaixo de 1024 px as faixas empilham. */
+/** Footer comum às telas a partir de 768 px (no mobile a navegação fica na barra de abas); abaixo de 1024 px as faixas empilham. */
 export function SiteFooter() {
   return (
-    <footer className="pt-16 pb-6 lg:pt-24">
+    <footer className="pt-16 pb-6 max-md:hidden lg:pt-24">
       <PageContainer>
         <h2 className="sr-only">Rodapé</h2>
 
