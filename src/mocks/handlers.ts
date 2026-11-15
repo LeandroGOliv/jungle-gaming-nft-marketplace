@@ -1,3 +1,14 @@
-import { realtimeHandlers } from './realtime'
+import { createSimulationHandlers } from './handlers/simulation'
+import type { MockRuntime } from './runtime'
 
-export const handlers = [...realtimeHandlers]
+/**
+ * A ordem importa: o handler de rede vem primeiro para aplicar latência e
+ * falhas antes de qualquer recurso; sem falha, ele deixa a requisição seguir.
+ */
+export function createHandlers(apiUrl: string, runtime: MockRuntime) {
+  return [
+    runtime.networkHandler,
+    ...createSimulationHandlers(apiUrl, runtime),
+    runtime.realtimeHandler,
+  ]
+}
