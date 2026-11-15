@@ -1,7 +1,9 @@
 # Layout shell — header, footer, mobile search bar and tab bar
 
-Fetched with `get_design_context`. Assets saved under `public/icons/` (SVGs
-as returned by Figma, unmodified). Screenshots in `screenshots/`.
+Fetched with `get_design_context`. This is a summary; the verbatim responses,
+with every measurement, are in `raw/` (`70522-3240`, `70492-696`, `70395-239`,
+`70395-245`). Assets saved under `public/icons/` (SVGs as returned by Figma,
+unmodified). Screenshots in `screenshots/`.
 
 ## Header (desktop) — `Header With Divider` `70522:3240` / `Header Row` `70486:560`
 
