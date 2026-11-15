@@ -10,6 +10,7 @@ import { useCart, useCartQuote } from '@/hooks/use-cart'
 import { nftListQueryOptions } from '@/hooks/use-nfts'
 import { describeRequestError } from '@/lib/http-error'
 import { cn } from '@/lib/utils'
+import { CartChangesNotice } from './cart-changes-notice'
 import { CART_COLUMNS, CartLine } from './cart-line'
 import { CartSummary } from './cart-summary'
 
@@ -23,6 +24,7 @@ export function CartView() {
       <PageContainer className="flex flex-col gap-3 px-7 pt-8 md:px-6 md:pt-8">
         <MobileHeader />
         <Breadcrumb />
+        <CartChangesNotice />
 
         {cart.isPending ? (
           <CartSkeleton />

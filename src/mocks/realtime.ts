@@ -114,9 +114,14 @@ export function createRealtimeHub(options: {
 /**
  * Toda alteração de NFT no store vira `nft.updated`: a mesma mudança aparece na
  * REST e no Socket.IO. O id do evento deriva da versão, então reemitir a mesma
- * mudança gera uma duplicata reconhecível.
+ * mudança gera uma duplicata reconhecível. A época (o reset atual) entra no id
+ * porque o reset faz as versões recomeçarem, e o id não pode se repetir.
  */
-export function bridgeStoreToRealtime(store: MockStore, hub: RealtimeHub) {
+export function bridgeStoreToRealtime(
+  store: MockStore,
+  hub: RealtimeHub,
+  epoch: () => string,
+) {
   return store.subscribe((changes) => {
     for (const change of changes) {
       if (change.type !== 'nft') continue
@@ -124,7 +129,7 @@ export function bridgeStoreToRealtime(store: MockStore, hub: RealtimeHub) {
       if (!nft) continue
 
       const envelope: RealtimeEnvelope<NftUpdatedData> = {
-        eventId: `evt_nft_${nft.id}_v${nft.version}`,
+        eventId: `evt_nft_${nft.id}_v${nft.version}_${epoch()}`,
         resource: { type: 'nft', id: nft.id },
         version: nft.version,
         emittedAt: new Date().toISOString(),

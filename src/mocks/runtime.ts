@@ -108,7 +108,9 @@ export function createMockRuntime({
       return lookup.ok ? lookup.user.id : null
     },
   })
-  bridgeStoreToRealtime(store, hub)
+  bridgeStoreToRealtime(store, hub, () =>
+    Date.parse(persisted.resetAt).toString(36),
+  )
 
   function applySettings(settings: SimulationSettings) {
     persisted = {

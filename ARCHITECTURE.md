@@ -28,7 +28,7 @@ src/mocks/
 
 - toda escrita passa por `store.write()`, que persiste o estado e notifica os assinantes;
 - dentro da escrita, `tx.touch(tipo, entidade)` incrementa a `version` e o `updatedAt` do recurso e o registra como alterado;
-- `realtime.ts` assina o store e emite `nft.updated` para cada NFT alterado, com `eventId` derivado da versão (`evt_nft_<id>_v<versão>`), de modo que reemitir a mesma mudança gera uma duplicata reconhecível.
+- `realtime.ts` assina o store e emite `nft.updated` para cada NFT alterado, com `eventId` derivado da versão e da época do reset (`evt_nft_<id>_v<versão>_<época>`), de modo que reemitir a mesma mudança gera uma duplicata reconhecível. A época entra porque o reset faz as versões recomeçarem, e um id não pode se repetir entre resets.
 
 Os ids gerados na simulação vêm de um contador persistido (`store.nextId('ord')` → `ord_0003`), e os sorteios de latência vêm de um PRNG com semente. Por isso, a mesma sequência de ações produz sempre o mesmo resultado.
 
@@ -356,7 +356,50 @@ As alterações não são otimistas: quantidade, inclusão e cupom dependem da d
 - **Feedback:** inclusão, alteração, remoção e cupom são anunciados na região viva (`polite`); as falhas, na `assertive`.
 - **Estados:** skeleton do carrinho e do resumo com as dimensões finais, carrinho vazio com caminho para o mercado, erro com "Tentar novamente" (carrinho e cotação, separadamente), e atualização em segundo plano esmaecendo os valores.
 - **"Colecionadores também viram":** os 5 NFTs em alta do catálogo (`GET /nfts?tab=trending`), na mesma vitrine do detalhe (`NftShelf`).
-- **Fora do escopo desta issue:** refletir preço e disponibilidade recebidos por Socket.IO com o carrinho aberto (issue de Tempo real). Hoje a mudança aparece na próxima cotação.
+- **Alterações em tempo real:** ver [Tempo real na aplicação](#tempo-real-na-aplicação).
+
+## Tempo real na aplicação
+
+### Contrato do evento `nft.updated`
+
+Todo evento usa o envelope de `src/types/realtime.ts`:
+
+| Campo       | Conteúdo                                                                |
+| ----------- | ----------------------------------------------------------------------- |
+| `eventId`   | Identidade da emissão; uma duplicata repete o mesmo id                  |
+| `resource`  | Recurso afetado: `{ type: 'nft', id }`                                  |
+| `version`   | Versão do recurso depois da mudança, a mesma do campo `version` da REST |
+| `emittedAt` | ISO 8601                                                                |
+| `data`      | `priceEth` (string decimal) e `editions: [{ id, available }]`           |
+
+O evento é público: vai a todas as conexões, de visitante ou de usuário. O payload é validado (`isNftUpdatedEvent`) antes de tocar o cache, e o que não segue o contrato é descartado.
+
+### Aplicação no cliente
+
+`useNftRealtime` (montado por `RealtimeSync` no layout) assina o socket da sessão atual:
+
+1. **Filtro de entrega** (`createEventGate`, em `utils/realtime.ts`): descarta o `eventId` já visto e toda versão que não seja maior que a conhecida. O piso é a maior versão do NFT no cache (detalhe, listas, relacionados); sem cache, vale a última versão aceita pelo filtro. Duplicatas e eventos antigos não regridem o estado nem repetem anúncios.
+2. **Catálogo e detalhe**: o NFT é atualizado no lugar em todas as consultas de `['nfts', ...]` (`applyNftUpdate` também recusa versão não mais nova). As listas ficam marcadas como desatualizadas, sem refetch imediato: o preço novo pode tirar o NFT de um filtro ou mudar a ordenação, e a REST recompõe a lista quando ela voltar a montar.
+3. **Carrinho**: se o NFT está no carrinho em cache, o carrinho e a cotação são invalidados e voltam da API (a cotação é a referência; o cliente não recalcula). As mudanças relevantes (preço, edição esgotada, disponível abaixo da quantidade) viram avisos.
+4. **Feedback acessível**: o detalhe aberto anuncia preço novo e edição esgotada; o carrinho anuncia o que afetou seus itens. Tudo vai para a região viva `polite`; o catálogo atualiza em silêncio, para não ler cada card.
+
+### Reconciliação com a REST
+
+Eventos emitidos durante uma queda não são reenviados. No `reconnect` do Manager do Socket.IO, o filtro é zerado e as consultas de NFT e do carrinho são invalidadas: o que está na tela volta da REST na hora, o resto fica desatualizado até montar de novo. A partir daí, a versão da REST volta a ser o piso.
+
+### Sessão e ciclo de vida
+
+Os listeners pertencem ao socket da sessão (ver [Política de sessão](#política-de-sessão)). Trocar de usuário troca o socket: o efeito remove `nft.updated` e `reconnect` do socket anterior e descarta os avisos do carrinho da sessão que terminou. Como o carrinho é lido pela chave do dono atual, um evento nunca altera o carrinho de outro usuário.
+
+### Decisões de UX
+
+- **Aviso no carrinho**: a mudança pode chegar enquanto o colecionador está em outra tela. O anúncio sai na hora, e o aviso "Itens do carrinho foram atualizados" fica no topo do carrinho até ser dispensado. O enunciado não pede notificação global, então não há toast.
+- **Aviso só em memória**: um refresh descarta os avisos. O carrinho recarregado já mostra os valores atuais e os itens sem estoque, pela cotação.
+
+### Limitações
+
+- **Ordem dos eventos**: uma resposta REST antiga que chegue depois de um evento mais novo sobrescreve o cache; o próximo evento ou a próxima revalidação corrige.
+- **Reconexão nos testes**: o `socket.io-client` espera até 5 s entre tentativas (com variação), então o teste de reconexão aceita até 15 s.
 
 ## Desvios do Figma
 
