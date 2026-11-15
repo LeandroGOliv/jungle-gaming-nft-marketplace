@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
-import { listNfts } from '@/services/nfts'
+import { getNft, listNfts, listRelatedNfts } from '@/services/nfts'
 import type { NftListQuery } from '@/types/nft'
 
 /** O catálogo é público: as chaves não dependem do usuário. */
@@ -7,6 +7,8 @@ export const nftKeys = {
   all: ['nfts'] as const,
   lists: () => [...nftKeys.all, 'list'] as const,
   list: (query: NftListQuery) => [...nftKeys.lists(), query] as const,
+  detail: (id: string) => [...nftKeys.all, 'detail', id] as const,
+  related: (id: string) => [...nftKeys.detail(id), 'related'] as const,
 }
 
 export function nftListQueryOptions(query: NftListQuery) {
@@ -40,4 +42,22 @@ export function useFeaturedNfts() {
       pageSize: 3,
     }),
   )
+}
+
+export function nftDetailQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: nftKeys.detail(id),
+    queryFn: ({ signal }) => getNft(id, signal),
+  })
+}
+
+export function useNft(id: string) {
+  return useQuery(nftDetailQueryOptions(id))
+}
+
+export function useRelatedNfts(id: string) {
+  return useQuery({
+    queryKey: nftKeys.related(id),
+    queryFn: ({ signal }) => listRelatedNfts(id, signal),
+  })
 }
