@@ -4,7 +4,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 /** Mesmas dimensões do detalhe carregado, para o layout não saltar. */
 export function NftDetailSkeleton() {
   return (
-    <div aria-busy="true" data-testid="nft-detail-loading">
+    <div
+      aria-busy="true"
+      data-testid="nft-detail-loading"
+      className="pb-[188px] md:pb-24"
+    >
       <p className="sr-only" role="status">
         Carregando NFT…
       </p>
@@ -29,26 +33,31 @@ export function NftDetailSkeleton() {
         </div>
       </div>
 
-      <PageContainer className="pt-8 pb-24 max-md:hidden">
-        <Skeleton className="h-4 w-36" />
-        <div className="mt-3 flex flex-col gap-8 lg:flex-row">
-          <div className="flex gap-4 lg:w-[573px] lg:shrink-0 lg:gap-7">
-            <div className="flex w-[100px] shrink-0 flex-col gap-4">
-              {Array.from({ length: 4 }, (_, i) => (
-                <Skeleton key={i} className="size-[100px] rounded-lg" />
-              ))}
+      <PageContainer className="flex flex-col gap-12 pt-10 md:gap-24 md:pt-8">
+        <div className="flex flex-col gap-3 max-md:hidden">
+          <Skeleton className="h-4 w-36" />
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <div className="flex gap-4 lg:w-[573px] lg:shrink-0 lg:gap-7">
+              <div className="flex w-[100px] shrink-0 flex-col gap-4">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <Skeleton key={i} className="size-[100px] rounded-lg" />
+                ))}
+              </div>
+              <Skeleton className="aspect-square min-w-0 flex-1 rounded-md lg:size-[444px] lg:flex-none" />
             </div>
-            <Skeleton className="aspect-square min-w-0 flex-1 rounded-md lg:size-[444px] lg:flex-none" />
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-5">
-            <Skeleton className="h-[37px] w-2/3" />
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-[94px] w-full" />
-            <Skeleton className="h-[56px] w-52" />
-            <Skeleton className="h-[50px] w-full" />
-            <Skeleton className="h-[114px] w-1/2" />
+            <div className="flex min-w-0 flex-1 flex-col gap-5">
+              <Skeleton className="h-[37px] w-2/3" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-[94px] w-full" />
+              <Skeleton className="h-[56px] w-52" />
+              <Skeleton className="h-[50px] w-full" />
+              <Skeleton className="h-[114px] w-1/2" />
+            </div>
           </div>
         </div>
+        {/* Descrição e relacionados: reservam a altura final, senão o footer salta. */}
+        <Skeleton className="h-[727px] w-full rounded-lg md:h-[439px] lg:h-[343px]" />
+        <Skeleton className="h-[372px] w-full rounded-lg lg:h-[362px]" />
       </PageContainer>
     </div>
   )
