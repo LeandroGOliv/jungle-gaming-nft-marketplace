@@ -432,6 +432,64 @@ A lista fica em `['user', userId, 'wallets']`, sob a chave do usuário: o logout
 - **Estados:** skeleton com shimmer na geometria das duas seções, erro com "Tentar novamente" e `aria-busy` durante a atualização em segundo plano.
 - **Navegação da conta:** a "Account Sidebar" do Figma (`AccountLayout`, compartilhada com o perfil) aparece a partir de 1024 px. Atividade, Lista de interesse, Ofertas, Arquivos baixados e Suporte levam a `/em-breve`. Abaixo de 1024 px a tela usa o cabeçalho com "Voltar" do carrinho mobile.
 
+## Pagamento
+
+### Contratos REST
+
+Todas as rotas usam `clientApi` e exigem sessão (401 sem ela). Os tipos ficam em `src/types/checkout.ts` e `src/types/order.ts`.
+
+| Método e caminho                          | Corpo                           | Resposta                 | Erros                                                                                                                     |
+| ----------------------------------------- | ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `GET /cart/quote`                         | —                               | `CartQuote`              | Revalidação de preço, disponibilidade, cupom e taxas antes do envio (contrato do carrinho)                                |
+| `GET /wallets`                            | —                               | `WalletsResponse`        | Carteiras cadastradas usadas no pagamento (contrato das carteiras)                                                        |
+| `POST /wallet-connections`                | `CreateWalletConnectionRequest` | `WalletConnection` (201) | 403 `WALLET_CONNECTION_REFUSED`; 422 endereço, rede ou provedor inválidos                                                 |
+| `GET /wallet-connections/:id`             | —                               | `WalletConnection`       | 404 `WALLET_CONNECTION_NOT_FOUND` (inclusive conexão de outro usuário)                                                    |
+| `DELETE /wallet-connections/:id`          | —                               | 204                      | —                                                                                                                         |
+| `POST /orders` (header `Idempotency-Key`) | `CreateOrderRequest`            | `Order` (201, `pending`) | 409 `QUOTE_CHANGED`, `WALLET_NOT_CONNECTED`, `CART_EMPTY`, `IDEMPOTENCY_KEY_REUSED`; 422 com `fieldErrors` ou sem a chave |
+
+- **Conexão simulada:** uma conexão vale para um endereço, uma rede e um provedor (MetaMask, WalletConnect ou Coinbase). Cada usuário tem uma conexão ativa; conectar outra encerra a anterior.
+- **Pedido:** o corpo leva a conexão, a carteira cadastrada (`walletId`, ou `null` com "Usar outra carteira?"), os dados do colecionador (`CollectorInput`, que vão só no snapshot do pedido e não alteram o perfil) e a cotação revisada (`cartVersion` e `totalEth`). O servidor recalcula a cotação. Se a versão do carrinho ou o total divergirem, ou se houver item indisponível, nada é criado e a resposta é 409 `QUOTE_CHANGED`.
+- **Idempotência:** a mesma chave com o mesmo conteúdo devolve o pedido já criado (200). Com outro conteúdo, a resposta é 409 `IDEMPOTENCY_KEY_REUSED`. A conexão não entra na comparação, então uma nova tentativa depois de reconectar a carteira continua sendo a mesma tentativa. O ciclo de vida (confirmação, recusa, `order.updated`, recibo) fica com a etapa de pedidos. Aqui o pedido nasce `pending` e a tela leva a `/pedidos/:id`.
+- **Store:** `walletConnections`, `orderRequests` (impressão de cada requisição, base da idempotência) e `checkoutTriggers`. O esquema subiu para a versão 5.
+
+### Evento `wallet.disconnected`
+
+O envelope é o mesmo dos demais eventos (`eventId`, `resource: { type: 'wallet-connection', id }`, `version`, `emittedAt`) e `data` traz `{ reason }`. É emitido só para as conexões Socket.IO do dono (`sendToUser`): a conexão de outra sessão não recebe o evento. O cliente descarta duplicatas e versões antigas e, após reconectar o socket, consulta `GET /wallet-connections/:id` para saber se a conexão sobreviveu à queda.
+
+### Cenários
+
+Todos partem do carrinho da Nova com Emerald Ape #042 (×2), Violet Nomad #314 (1/10, ×1) e o cupom `KURIO10`.
+
+| Cenário                   | Comportamento                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `checkout`                | Carrinho pronto para o pagamento                                                                   |
+| `checkout-price-change`   | Na primeira tentativa de pedido, o preço do primeiro item sobe 0.25 ETH (também sai `nft.updated`) |
+| `checkout-sold-out`       | Na primeira tentativa, a edição do primeiro item esgota                                            |
+| `checkout-coupon-expired` | Na primeira tentativa, o cupom do carrinho expira                                                  |
+| `wallet-refused`          | A primeira conexão de carteira é recusada; a seguinte é aceita                                     |
+| `wallet-disconnect`       | A carteira desconecta 3 s depois de conectar (`wallet.disconnected`)                               |
+
+A sessão expirada usa `expireSessions` (ou o cenário `short-session`). `window.__mocks.disconnectWallets()` encerra as conexões abertas e emite o evento.
+
+### Revalidação da cotação
+
+- A primeira cotação exibida para a versão atual do carrinho é a **revisão aceita**. `toReviewSnapshot` e `describeReviewChanges` (`src/utils/checkout-review.ts`) comparam a revisão aceita com a atual: itens, preço unitário, quantidade, indisponibilidade, cupom, desconto, taxa e total, com valores ETH comparados em wei.
+- Um `nft.updated` com a tela aberta invalida o carrinho (fluxo do tempo real), a cotação é recalculada e as diferenças aparecem no alerta "Os valores do pedido mudaram", anunciado na região viva. A compra fica bloqueada até o colecionador clicar em "Aceitar novos valores".
+- Ao confirmar, carrinho e cotação são buscados de novo na API, ignorando o cache (`useRevalidateCart`). Qualquer diferença em relação à revisão aceita cancela o envio. O 409 `QUOTE_CHANGED` do servidor tem o mesmo efeito: o carrinho recarrega e o alerta pede nova confirmação.
+- Enquanto a cotação atualiza em segundo plano, os valores ficam esmaecidos com "Atualizando valores…" e a confirmação espera.
+
+### Sessão expirada
+
+O formulário é salvo continuamente em `sessionStorage`, por usuário (`src/lib/checkout-draft.ts`). Um 401 leva ao login carregando `/pagamento` como retorno. Ao entrar de novo, a tela recupera os dados digitados e a carteira escolhida, e o carrinho continua na API. O rascunho é apagado quando o pedido é criado e no logout explícito. Outro usuário na mesma aba lê a própria chave.
+
+### Decisões de UX
+
+- **Carteira cadastrada:** a principal vem escolhida e preenche o "Perfil do colecionador". Endereço, rede, ENS e carteira secundária ficam somente leitura enquanto uma carteira cadastrada está escolhida. "Usar outra carteira?" libera esses campos e os limpa. O nome de usuário vem da sessão.
+- **Conexão:** escolher um provedor em "Carteira e rede" conecta na hora. O provedor da carteira cadastrada já vem marcado, com "Conectar". A opção marcada mostra "Conectando…", "Conectada", "Conexão recusada" ou "Desconectada", com "Tentar novamente" ou "Reconectar". Mudar endereço, rede ou provedor invalida a conexão, e sair da tela a encerra.
+- **Confirmar compra:** o botão fica sempre focável (`aria-disabled` quando bloqueado), com o motivo abaixo dele ligado por `aria-describedby`. Enviar valida o formulário e leva o foco ao primeiro campo inválido. Sem conexão, o foco vai para "Carteira e rede"; com valores alterados, vai para o alerta.
+- **Idempotência no cliente:** a chave é a mesma enquanto o conteúdo do pedido não muda (clique repetido, nova tentativa após falha) e é renovada quando o colecionador altera algo. Recuperar a chave após um refresh fica com a etapa de pedidos.
+- **Estados:** skeleton com shimmer na grade final, erro com "Tentar novamente" (carrinho, cotação e carteiras), carrinho vazio com "Explorar o mercado", e `aria-busy` com valores esmaecidos durante a atualização.
+
 ## Desvios do Figma
 
 | Item                                      | Desvio                                                                                                                                                                                                                                                                                            | Motivo                                                                                                          |
@@ -487,3 +545,10 @@ A lista fica em `['user', userId, 'wallets']`, sob a chave do usuário: o logout
 | Carteiras: sufixo ".eth"                  | Desenhado como select, mas `.eth` é o único domínio aceito: o quadro é fixo, com a seta do Figma, e o campo descreve o sufixo para leitores de tela.                                                                                                                                              |
 | Carteiras: erros                          | Não estão no Figma. Seguem o login: mensagem em 13/16 em `text-coral` abaixo do campo e borda coral.                                                                                                                                                                                              |
 | Carteiras: ícones                         | Ícones da sidebar e a seta dos selects exportados do Figma em SVG (`public/icons/account-*.svg`, `select-arrow-down.svg`), com as cores originais.                                                                                                                                                |
+| Pagamento: escolha da carteira (desktop)  | O frame desktop não desenha a escolha da carteira cadastrada. Entrou um select "Carteira cadastrada" acima do formulário, no estilo dos campos.                                                                                                                                                   | Usar as carteiras cadastradas, como pede o enunciado                                                            |
+| Pagamento: formulário e itens (mobile)    | O frame mobile não desenha o formulário nem os itens. "Revisar pedido" e "Dados do colecionador" entram como seções recolhíveis entre os provedores e o total, fechadas por padrão e abertas automaticamente quando há erro.                                                                      | Validação e revisão antes do envio também no mobile                                                             |
+| Pagamento: tablet (768 px)                | Sem frame. Do desktop vêm os campos em duas colunas, com "Seus NFTs", "Carteira e rede" e o botão abaixo. A partir de 1024 px, as colunas de 763 e 405 px ficam lado a lado.                                                                                                                      | —                                                                                                               |
+| Pagamento: kebab dos cards (mobile)       | O "⋮" dos cards de carteira foi omitido. "Trocar carteira" leva a `/carteiras`.                                                                                                                                                                                                                   | Evitar um controle que aparenta ação sem tê-la                                                                  |
+| Pagamento: marca da Coinbase (mobile)     | O ícone da Coinbase não foi exportado (MCP e REST sem cota). No lugar dele entrou o ícone de carteira já usado na conta (`account-wallets.svg`), no mesmo círculo de 40 px das marcas "W" e "M".                                                                                                  | Asset indisponível                                                                                              |
+| Pagamento: status, alerta e erros         | Não estão no Figma. O status da conexão fica em 12 px na opção marcada. O alerta de valores alterados usa o card com borda coral, e os erros seguem as carteiras.                                                                                                                                 | Estados exigidos pelo enunciado                                                                                 |
+| Pagamento: "Aplique aqui"                 | Virou link para o carrinho, onde o cupom é aplicado.                                                                                                                                                                                                                                              | O cupom pertence ao carrinho; a cotação do pagamento o reflete                                                  |

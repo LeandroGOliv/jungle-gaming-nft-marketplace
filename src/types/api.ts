@@ -1,5 +1,6 @@
 import type { AuthErrorReason } from './auth'
 import type { CartErrorReason } from './cart'
+import type { CheckoutErrorReason } from './checkout'
 import type { WalletErrorReason } from './wallet'
 
 /**
@@ -7,7 +8,7 @@ import type { WalletErrorReason } from './wallet'
  * Cada fluxo acrescenta os seus (carrinho, checkout...).
  */
 export type ApiErrorReason =
-  AuthErrorReason | CartErrorReason | WalletErrorReason
+  AuthErrorReason | CartErrorReason | CheckoutErrorReason | WalletErrorReason
 
 /**
  * Corpo de toda resposta de erro da API. `code` é a categoria genérica,

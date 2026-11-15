@@ -1,5 +1,6 @@
 import { createAuthHandlers } from './handlers/auth'
 import { createCartHandlers } from './handlers/cart'
+import { createCheckoutHandlers } from './handlers/checkout'
 import { createFavoriteHandlers } from './handlers/favorites'
 import { createNftHandlers } from './handlers/nfts'
 import { createSimulationHandlers } from './handlers/simulation'
@@ -19,6 +20,7 @@ export function createHandlers(apiUrl: string, runtime: MockRuntime) {
     ...createFavoriteHandlers(apiUrl, runtime),
     ...createCartHandlers(apiUrl, runtime),
     ...createWalletHandlers(apiUrl, runtime),
+    ...createCheckoutHandlers(apiUrl, runtime),
     runtime.realtimeHandler,
   ]
 }

@@ -49,6 +49,12 @@ export type ScenarioId =
   | 'short-session'
   | 'favorite-error'
   | 'wallet-error'
+  | 'checkout'
+  | 'checkout-price-change'
+  | 'checkout-sold-out'
+  | 'checkout-coupon-expired'
+  | 'wallet-refused'
+  | 'wallet-disconnect'
 
 export interface ScenarioSummary {
   id: ScenarioId
@@ -129,6 +135,8 @@ export interface MockControlApi {
   emit: (event: RealtimeEventName, payload: unknown) => void
   /** Vence todas as sessões abertas: a próxima chamada autenticada recebe 401. */
   expireSessions: () => void
+  /** Encerra as conexões de carteira abertas e emite `wallet.disconnected` ao dono. */
+  disconnectWallets: () => void
 }
 
 declare global {

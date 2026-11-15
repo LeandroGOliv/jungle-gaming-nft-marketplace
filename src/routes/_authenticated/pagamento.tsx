@@ -1,19 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageContainer } from '@/components/layout/page-container'
-import { StateMessage } from '@/components/layout/state-message'
+import { CheckoutView } from '@/components/checkout/checkout-view'
 
-// Rota reservada e já protegida pela sessão; a tela entra na etapa própria.
 export const Route = createFileRoute('/_authenticated/pagamento')({
-  staticData: { navSection: 'market' },
-  component: Page,
+  // Como no carrinho: o frame mobile tem cabeçalho e botão próprios, sem a tab bar.
+  staticData: {
+    navSection: 'market',
+    headerDivider: false,
+    mobileTabBar: false,
+  },
+  component: CheckoutView,
 })
-
-function Page() {
-  return (
-    <PageContainer className="pt-8 md:pt-12">
-      <StateMessage title="Pagamento" headingLevel={1}>
-        <p>Esta tela ainda está em construção.</p>
-      </StateMessage>
-    </PageContainer>
-  )
-}

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import {
   keepPreviousData,
   useMutation,
@@ -72,19 +72,28 @@ export function useCartKey() {
  * id do visitante só é descartado depois que a API confirma a mescla, então
  * uma falha (ou um refresh no meio) apenas repete a tentativa.
  */
+function fetchCart(owner: CartOwner, signal: AbortSignal) {
+  const pendingGuest = guestCartId.get()
+  if (owner.kind === 'user' && pendingGuest) {
+    return mergeGuestCart(pendingGuest, signal).then((merged) => {
+      guestCartId.clear()
+      return merged
+    })
+  }
+  return getCart(owner.kind === 'guest' ? owner.guestCartId : null, signal)
+}
+
+const quoteKey = (owner: CartOwner, version: number) => [
+  ...(owner.kind === 'pending' ? ['cart', 'pending'] : ownerKey(owner)),
+  'quote',
+  version,
+]
+
 export function useCart() {
   const owner = useCartOwner()
   const query = useQuery({
     queryKey: owner.kind === 'pending' ? ['cart', 'pending'] : ownerKey(owner),
-    queryFn: async ({ signal }) => {
-      const pendingGuest = guestCartId.get()
-      if (owner.kind === 'user' && pendingGuest) {
-        const merged = await mergeGuestCart(pendingGuest, signal)
-        guestCartId.clear()
-        return merged
-      }
-      return getCart(owner.kind === 'guest' ? owner.guestCartId : null, signal)
-    },
+    queryFn: ({ signal }) => fetchCart(owner, signal),
     enabled: owner.kind !== 'pending',
   })
   return { ...query, owner }
@@ -97,16 +106,36 @@ export function useCart() {
  */
 export function useCartQuote(cart: Cart | undefined, owner: CartOwner) {
   return useQuery({
-    queryKey: [
-      ...(owner.kind === 'pending' ? ['cart', 'pending'] : ownerKey(owner)),
-      'quote',
-      cart?.version ?? 0,
-    ],
+    queryKey: quoteKey(owner, cart?.version ?? 0),
     queryFn: ({ signal }) =>
       getCartQuote(owner.kind === 'guest' ? owner.guestCartId : null, signal),
     enabled: cart !== undefined && cart.items.length > 0,
     placeholderData: keepPreviousData,
   })
+}
+
+/**
+ * Busca carrinho e cotação na API, ignorando o cache, e grava o resultado
+ * nele: a confirmação da compra compara a revisão aceita com estes valores.
+ */
+export function useRevalidateCart() {
+  const queryClient = useQueryClient()
+  const owner = useCartOwner()
+  return useCallback(async () => {
+    if (owner.kind === 'pending') throw new Error('Sessão ainda não resolvida.')
+    const cart = await queryClient.fetchQuery({
+      queryKey: ownerKey(owner),
+      queryFn: ({ signal }) => fetchCart(owner, signal),
+      staleTime: 0,
+    })
+    const quote = await queryClient.fetchQuery({
+      queryKey: quoteKey(owner, cart.version),
+      queryFn: ({ signal }) =>
+        getCartQuote(owner.kind === 'guest' ? owner.guestCartId : null, signal),
+      staleTime: 0,
+    })
+    return { cart, quote }
+  }, [queryClient, owner])
 }
 
 /**

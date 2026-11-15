@@ -1,6 +1,6 @@
 import type { EthAmount } from './nft'
 
-export type RealtimeResourceType = 'nft' | 'order'
+export type RealtimeResourceType = 'nft' | 'order' | 'wallet-connection'
 
 /**
  * Envelope comum a todos os eventos de tempo real. `eventId` identifica a
@@ -20,8 +20,14 @@ export interface NftUpdatedData {
   editions: Array<{ id: string; available: number }>
 }
 
+/** A carteira encerrou a conexão (o usuário desconectou no provedor). */
+export interface WalletDisconnectedData {
+  reason: string
+}
+
 export interface RealtimeEventMap {
   'nft.updated': RealtimeEnvelope<NftUpdatedData>
+  'wallet.disconnected': RealtimeEnvelope<WalletDisconnectedData>
 }
 
 export type RealtimeEventName = keyof RealtimeEventMap

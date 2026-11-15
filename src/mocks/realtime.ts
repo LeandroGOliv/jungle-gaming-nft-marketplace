@@ -28,6 +28,12 @@ export interface RealtimeHub {
   /** Handler MSW do WebSocket do Socket.IO. */
   handler: ReturnType<ReturnType<typeof ws.link>['addEventListener']>
   broadcast: (event: RealtimeEventName, payload: unknown) => void
+  /** Só para as conexões do usuário: eventos privados não vão a outra sessão. */
+  sendToUser: (
+    userId: string,
+    event: RealtimeEventName,
+    payload: unknown,
+  ) => void
   setAvailable: (available: boolean) => void
   connectionCount: () => number
   /**
@@ -100,6 +106,11 @@ export function createRealtimeHub(options: {
     handler: link.addEventListener('connection', accept),
     broadcast(event, payload) {
       for (const connection of connections) connection.emit(event, payload)
+    },
+    sendToUser(userId, event, payload) {
+      for (const connection of connections) {
+        if (connection.userId === userId) connection.emit(event, payload)
+      }
     },
     setAvailable(available) {
       if (available) return
