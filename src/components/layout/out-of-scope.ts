@@ -22,11 +22,13 @@ export const OUT_OF_SCOPE_SECTION_IDS = [
   'ofertas',
   'arquivos-baixados',
   'suporte',
+  'explorador-de-blocos',
 ] as const
 
 export type OutOfScopeSection = (typeof OUT_OF_SCOPE_SECTION_IDS)[number]
 
 export const OUT_OF_SCOPE_SECTIONS: Record<OutOfScopeSection, string> = {
+  'explorador-de-blocos': 'O explorador de blocos',
   criadores: 'Criadores',
   aprenda: 'Aprenda',
   favoritos: 'Favoritos',

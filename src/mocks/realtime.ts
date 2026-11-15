@@ -1,6 +1,7 @@
 import { ws } from 'msw'
 import { toSocketIo } from '@mswjs/socket.io-binding'
 import type { WebSocketHandlerConnection } from 'msw'
+import { orderUpdatedEnvelope } from './orders'
 import type { MockStore } from './db'
 import type {
   NftUpdatedData,
@@ -123,7 +124,7 @@ export function createRealtimeHub(options: {
 }
 
 /**
- * Toda alteração de NFT no store vira `nft.updated`: a mesma mudança aparece na
+ * Toda alteração de NFT no store vira `nft.updated` (e de pedido, `order.updated`): a mesma mudança aparece na
  * REST e no Socket.IO. O id do evento deriva da versão, então reemitir a mesma
  * mudança gera uma duplicata reconhecível. A época (o reset atual) entra no id
  * porque o reset faz as versões recomeçarem, e o id não pode se repetir.
@@ -135,6 +136,18 @@ export function bridgeStoreToRealtime(
 ) {
   return store.subscribe((changes) => {
     for (const change of changes) {
+      if (change.type === 'order') {
+        // Pedido é privado: o evento vai só às conexões do dono.
+        const order = store.state.orders.find((o) => o.id === change.id)
+        if (order) {
+          hub.sendToUser(
+            order.userId,
+            'order.updated',
+            orderUpdatedEnvelope(order, epoch()),
+          )
+        }
+        continue
+      }
       if (change.type !== 'nft') continue
       const nft = store.state.nfts.find((n) => n.id === change.id)
       if (!nft) continue

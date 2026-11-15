@@ -26,6 +26,20 @@ export interface CheckoutScenario {
   onOrderAttempt?: 'price-change' | 'sold-out' | 'coupon-expired'
   /** `refuse-first`: a primeira conexão é recusada; `disconnect`: a carteira cai após conectar. */
   connection?: 'refuse-first' | 'disconnect'
+  order?: OrderScenario
+}
+
+/**
+ * Ciclo de vida do pedido no cenário. Sem ele, o pedido pendente é confirmado
+ * alguns segundos depois de criado.
+ */
+export interface OrderScenario {
+  /** `manual`: fica pendente até o painel ou o teste decidir. */
+  settle?: 'confirm' | 'refuse' | 'manual'
+  /** O primeiro `POST /orders` cria o pedido mas a resposta nunca chega. */
+  timeoutAfterCreate?: boolean
+  /** O Socket.IO cai enquanto o pedido está pendente e o desfecho sai sem ninguém ouvindo. */
+  disconnectWhilePending?: boolean
 }
 
 interface Scenario extends ScenarioSummary {
@@ -227,6 +241,30 @@ const SCENARIOS: Array<Scenario> = [
     'Carteira desconecta',
     'Carrinho do checkout; a carteira se desconecta 3 s depois de conectar (evento wallet.disconnected).',
     { connection: 'disconnect' },
+  ),
+  checkoutScenario(
+    'order-refused',
+    'Pagamento recusado',
+    'Carrinho do checkout; o pedido é criado e a simulação recusa o pagamento (order.updated). O carrinho é preservado.',
+    { order: { settle: 'refuse' } },
+  ),
+  checkoutScenario(
+    'order-timeout',
+    'Timeout após criar o pedido',
+    'Carrinho do checkout; o primeiro envio cria o pedido, mas a resposta não chega e vale o timeout do cliente. A nova tentativa recupera o mesmo pedido.',
+    { order: { timeoutAfterCreate: true } },
+  ),
+  checkoutScenario(
+    'order-pending',
+    'Pedido fica pendente',
+    'Carrinho do checkout; o pedido não é decidido sozinho. Confirme ou recuse pelo painel de simulação.',
+    { order: { settle: 'manual' } },
+  ),
+  checkoutScenario(
+    'order-disconnect',
+    'Desconexão com pedido pendente',
+    'Carrinho do checkout; o Socket.IO cai logo após o pedido ser criado, a confirmação sai durante a queda e a conexão volta alguns segundos depois.',
+    { order: { disconnectWhilePending: true } },
   ),
 ]
 

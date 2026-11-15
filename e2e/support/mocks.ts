@@ -6,6 +6,7 @@ import type {
   LatencyPresetId,
   LatencyProfile,
   NftPatch,
+  OrderOutcome,
   ScenarioId,
   SimulationState,
 } from '../../src/types/simulation'
@@ -79,6 +80,14 @@ export class Mocks {
   /** Encerra as conexões de carteira: `wallet.disconnected` sai pelo Socket.IO. */
   disconnectWallets() {
     return this.page.evaluate(() => window.__mocks!.disconnectWallets())
+  }
+
+  /** Decide um pedido pendente: o store muda e `order.updated` sai pelo Socket.IO. */
+  settleOrder(id: string, outcome: OrderOutcome) {
+    return this.page.evaluate(
+      ([orderId, o]) => window.__mocks!.settleOrder(orderId, o),
+      [id, outcome] as const,
+    )
   }
 
   /** Evento cru, para duplicatas e versões antigas. */

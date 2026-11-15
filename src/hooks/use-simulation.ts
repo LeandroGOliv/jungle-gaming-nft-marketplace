@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   checkHealth,
   expireSessions,
+  settleOrder,
   getSimulation,
   resetSimulation,
   updateSimulation,
 } from '@/services/simulation'
 import type {
+  OrderOutcome,
   SimulationResetRequest,
   SimulationState,
 } from '@/types/simulation'
@@ -49,6 +51,21 @@ export function useExpireSessions() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: expireSessions,
+    onSuccess: (state) => queryClient.setQueryData(simulationKeys.state, state),
+  })
+}
+
+/** Decide um pedido pendente; o dono recebe `order.updated` pelo Socket.IO. */
+export function useSettleOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      outcome,
+    }: {
+      orderId: string
+      outcome: OrderOutcome
+    }) => settleOrder(orderId, outcome),
     onSuccess: (state) => queryClient.setQueryData(simulationKeys.state, state),
   })
 }

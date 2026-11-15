@@ -63,3 +63,4 @@ export type CheckoutErrorReason =
   | 'WALLET_NOT_CONNECTED'
   | 'WALLET_CONNECTION_NOT_FOUND'
   | 'IDEMPOTENCY_KEY_REUSED'
+  | 'ORDER_NOT_FOUND'

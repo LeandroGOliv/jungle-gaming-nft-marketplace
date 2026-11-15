@@ -123,6 +123,8 @@ Toda tela é renderizada dentro de `AppShell` (`src/components/layout/`), montad
 
 Login e cadastro não são rotas: abrem como modal sobre a tela atual pelo parâmetro `auth` da rota raiz (ver [Sessão e autenticação](#sessão-e-autenticação)).
 
+`/pedidos/$pedidoId` só redireciona para `/pagamento?pedido=<id>`: o recibo é o modal sobre o pagamento (ver [Pedido e confirmação](#pedido-e-confirmação)).
+
 `/carrinho`, `/perfil`, `/carteiras`, `/pagamento` e `/pedidos/$pedidoId` existem como rotas reservadas ("em construção") para os links e guardas serem tipados desde já; cada tela substitui o componente na sua etapa.
 
 ### Opções por rota
@@ -449,7 +451,7 @@ Todas as rotas usam `clientApi` e exigem sessão (401 sem ela). Os tipos ficam e
 
 - **Conexão simulada:** uma conexão vale para um endereço, uma rede e um provedor (MetaMask, WalletConnect ou Coinbase). Cada usuário tem uma conexão ativa; conectar outra encerra a anterior.
 - **Pedido:** o corpo leva a conexão, a carteira cadastrada (`walletId`, ou `null` com "Usar outra carteira?"), os dados do colecionador (`CollectorInput`, que vão só no snapshot do pedido e não alteram o perfil) e a cotação revisada (`cartVersion` e `totalEth`). O servidor recalcula a cotação. Se a versão do carrinho ou o total divergirem, ou se houver item indisponível, nada é criado e a resposta é 409 `QUOTE_CHANGED`.
-- **Idempotência:** a mesma chave com o mesmo conteúdo devolve o pedido já criado (200). Com outro conteúdo, a resposta é 409 `IDEMPOTENCY_KEY_REUSED`. A conexão não entra na comparação, então uma nova tentativa depois de reconectar a carteira continua sendo a mesma tentativa. O ciclo de vida (confirmação, recusa, `order.updated`, recibo) fica com a etapa de pedidos. Aqui o pedido nasce `pending` e a tela leva a `/pedidos/:id`.
+- **Idempotência:** a mesma chave com o mesmo conteúdo devolve o pedido já criado (200). Com outro conteúdo, a resposta é 409 `IDEMPOTENCY_KEY_REUSED`. A conexão não entra na comparação, então uma nova tentativa depois de reconectar a carteira continua sendo a mesma tentativa. O ciclo de vida segue em [Pedido e confirmação](#pedido-e-confirmação). Aqui o pedido nasce `pending` e a tela leva a `/pedidos/:id`.
 - **Store:** `walletConnections`, `orderRequests` (impressão de cada requisição, base da idempotência) e `checkoutTriggers`. O esquema subiu para a versão 5.
 
 ### Evento `wallet.disconnected`
@@ -487,8 +489,62 @@ O formulário é salvo continuamente em `sessionStorage`, por usuário (`src/lib
 - **Carteira cadastrada:** a principal vem escolhida e preenche o "Perfil do colecionador". Endereço, rede, ENS e carteira secundária ficam somente leitura enquanto uma carteira cadastrada está escolhida. "Usar outra carteira?" libera esses campos e os limpa. O nome de usuário vem da sessão.
 - **Conexão:** escolher um provedor em "Carteira e rede" conecta na hora. O provedor da carteira cadastrada já vem marcado, com "Conectar". A opção marcada mostra "Conectando…", "Conectada", "Conexão recusada" ou "Desconectada", com "Tentar novamente" ou "Reconectar". Mudar endereço, rede ou provedor invalida a conexão, e sair da tela a encerra.
 - **Confirmar compra:** o botão fica sempre focável (`aria-disabled` quando bloqueado), com o motivo abaixo dele ligado por `aria-describedby`. Enviar valida o formulário e leva o foco ao primeiro campo inválido. Sem conexão, o foco vai para "Carteira e rede"; com valores alterados, vai para o alerta.
-- **Idempotência no cliente:** a chave é a mesma enquanto o conteúdo do pedido não muda (clique repetido, nova tentativa após falha) e é renovada quando o colecionador altera algo. Recuperar a chave após um refresh fica com a etapa de pedidos.
+- **Idempotência no cliente:** a chave é a mesma enquanto o conteúdo do pedido não muda (clique repetido, nova tentativa após falha) e é renovada quando o colecionador altera algo. A chave sobrevive ao refresh (ver [Pedido e confirmação](#pedido-e-confirmação)).
 - **Estados:** skeleton com shimmer na grade final, erro com "Tentar novamente" (carrinho, cotação e carteiras), carrinho vazio com "Explorar o mercado", e `aria-busy` com valores esmaecidos durante a atualização.
+
+## Pedido e confirmação
+
+### Contratos REST
+
+| Método e caminho                          | Corpo                | Resposta                                   | Erros                                                                                 |
+| ----------------------------------------- | -------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `POST /orders` (header `Idempotency-Key`) | `CreateOrderRequest` | `Order` (201 novo, 200 repetição da chave) | Ver [Pagamento](#pagamento)                                                           |
+| `GET /orders/:id`                         | —                    | `Order`                                    | 404 `ORDER_NOT_FOUND`, inclusive para pedido de outro usuário (não vaza a existência) |
+
+`Order` (`src/types/order.ts`) é o snapshot da compra: itens com nome, token, edição, imagem, preço unitário e subtotal, mais desconto, taxa de rede, total, cupom, carteira, provedor, rede e dados do colecionador. Só `status`, `transactionHash`, `refusalReason`, `updatedAt` e `version` mudam depois da criação. O recibo é desenhado só a partir dele, então mudanças posteriores no catálogo não alteram os valores.
+
+### Evento `order.updated`
+
+Envelope comum (`eventId`, `resource: { type: 'order', id }`, `version`, `emittedAt`). `data` traz `{ status, transactionHash, refusalReason, updatedAt }`. É emitido só para as conexões do dono (`sendToUser`), toda vez que o store marca o pedido como alterado. O id deriva da versão e da época do reset, então reemitir a mesma mudança gera uma duplicata reconhecível.
+
+### Ciclo de vida na simulação
+
+- O pedido nasce `pending` e o runtime agenda o desfecho 2,5 s depois da criação, contados a partir de `createdAt`. Como o worker reinicia a cada refresh, os pendentes são reagendados pelo tempo que falta (`scheduleSettlement` em `src/mocks/runtime.ts`).
+- **Confirmar** (`settleOrder` em `src/mocks/orders.ts`) gera um hash simulado e determinístico (FNV-1a sobre id e chave). Tira do carrinho só os itens e quantidades do pedido (sobe a versão do carrinho e libera o cupom usado) e baixa o estoque das edições, o que também emite `nft.updated`. **Recusar** grava o motivo e não mexe em mais nada.
+- Confirmado e recusado são terminais: `settleOrder` ignora pedido que já terminou.
+- `window.__mocks.settleOrder(id, 'confirmed' | 'refused')` e o painel `/simulacao` ("Pedidos pendentes") decidem um pedido na hora.
+
+| Cenário             | Comportamento                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkout` e demais | Confirmação automática após 2,5 s                                                                                                                        |
+| `order-refused`     | Recusa automática após 2,5 s                                                                                                                             |
+| `order-timeout`     | O primeiro `POST /orders` cria o pedido e a resposta nunca chega (`delay('infinite')`): vale o timeout de 15 s do cliente                                |
+| `order-pending`     | Nada é decidido sozinho: o painel ou o teste confirma ou recusa                                                                                          |
+| `order-disconnect`  | 1 s após a criação, o Socket.IO cai por 5 s; a confirmação (2,5 s) sai durante a queda e se perde. A queda fica só em memória: um refresh não a prolonga |
+
+### Idempotência no cliente
+
+- A tentativa fica em `sessionStorage`, por usuário (`src/lib/order-attempt.ts`): `{ fingerprint, key, inFlight }`. A chave é a mesma enquanto o conteúdo do pedido (tudo menos a conexão) não muda, inclusive depois de um refresh.
+- `inFlight` guarda o envio sem resposta. Na resposta (pedido ou erro definitivo) ele é limpo. Em timeout ou queda ele fica, e a mutation repete o envio com a mesma chave até 2 vezes (`useCreateOrder` em `src/hooks/use-order.ts`). Se o pedido já existia, a API devolve o mesmo.
+- Se a página recarregou com um envio em dúvida, ao abrir `/pagamento` o `ResumeOrderAttempt` reenvia aquele corpo com a mesma chave. Pedido existente abre o resultado. Se nada foi criado, a API recusa (a conexão antiga já caiu) sem criar nada.
+- Pedido terminado libera a chave: depois de uma recusa, a nova tentativa é outra compra, com outro pedido.
+- O logout explícito apaga as tentativas, como o rascunho do pagamento.
+- O resultado abre pelo `onSuccess` da mutation, não pelo `mutate`. No timeout o pedido já foi confirmado quando a resposta chega, o carrinho esvaziou e o formulário desmontou, e o callback do `mutate` não rodaria.
+
+### Estado do pedido no cliente
+
+- `useOrder` consulta `['user', userId, 'orders', id]`, uma chave privada que sai do cache no logout como as demais.
+- `order.updated` passa pelo `createEventGate`, que descarta duplicatas, e pelo `applyOrderUpdate` (`src/utils/order.ts`), que ignora versão não mais nova que a do cache e nunca altera pedido terminal.
+- **Reconexão:** no `reconnect` do socket, o pedido é buscado de novo na REST. Enquanto pendente, uma consulta a cada 10 s cobre o caso de o tempo real estar fora.
+- **Desfecho:** ao virar terminal, a chave é liberada. Na confirmação, carrinho e NFTs são invalidados. A mudança é anunciada na região viva: polida na confirmação, assertiva na recusa. Abrir um recibo que já estava terminado não gera anúncio.
+
+### Decisões de UX
+
+- **Modal sobre o pagamento:** como no Figma, o resultado é um modal sobre `/pagamento`, aberto por `?pedido=<id>`. Acesso direto e refresh funcionam, e fechar remove o parâmetro. No mobile ocupa a tela inteira, como o login.
+- **Pendente:** anel girando (parado com `prefers-reduced-motion`), "Aguardando a confirmação do pagamento", os itens e valores do snapshot e "ID da transação: Aguardando". Não há recibo nem link do explorador.
+- **Recusado:** marca "!" coral, o motivo vindo da simulação, os itens e "Voltar ao pagamento", que fecha o modal com o formulário e o carrinho intactos.
+- **Confirmado:** o recibo do Figma. "Ver no Etherscan" leva a `/em-breve?secao=explorador-de-blocos`, com a nota "Hash e explorador simulados: nenhuma transação real foi feita." O hash curto tem o completo no `title`.
+- **Estados:** skeleton com shimmer nas alturas do recibo, "Pedido não encontrado" para 404 (pedido de outro usuário incluído), erro com "Tentar novamente" e "Atualizando…" durante a reconciliação em segundo plano.
 
 ## Desvios do Figma
 
@@ -552,3 +608,9 @@ O formulário é salvo continuamente em `sessionStorage`, por usuário (`src/lib
 | Pagamento: marca da Coinbase (mobile)     | O ícone da Coinbase não foi exportado (MCP e REST sem cota). No lugar dele entrou o ícone de carteira já usado na conta (`account-wallets.svg`), no mesmo círculo de 40 px das marcas "W" e "M".                                                                                                  | Asset indisponível                                                                                              |
 | Pagamento: status, alerta e erros         | Não estão no Figma. O status da conexão fica em 12 px na opção marcada. O alerta de valores alterados usa o card com borda coral, e os erros seguem as carteiras.                                                                                                                                 | Estados exigidos pelo enunciado                                                                                 |
 | Pagamento: "Aplique aqui"                 | Virou link para o carrinho, onde o cupom é aplicado.                                                                                                                                                                                                                                              | O cupom pertence ao carrinho; a cotação do pagamento o reflete                                                  |
+| Confirmação: pendente, recusado e erros   | Só o confirmado está no Figma. Pendente e recusado reutilizam o mesmo modal, com anel girando ou marca "!" coral no lugar do ícone e descrição em `text-secondary`.                                                                                                                               | Estados exigidos pelo enunciado                                                                                 |
+| Confirmação: desconto e edição            | O Figma não mostra desconto nem edição. "Desconto (CUPOM)" entra acima da taxa quando o pedido teve cupom, e cada item ganha "Edição 1/50" abaixo do token.                                                                                                                                       | Recibo completo a partir do snapshot                                                                            |
+| Confirmação: nota do explorador           | Texto "Hash e explorador simulados…" abaixo de "Ver no Etherscan", que leva a `/em-breve`.                                                                                                                                                                                                        | Não aparentar integração real                                                                                   |
+| Confirmação: imagens dos itens            | Os itens 2 e 3 têm 66 e 65 px no Figma; todos usam 70 px (44 px no mobile).                                                                                                                                                                                                                       | Inconsistência do arquivo                                                                                       |
+| Confirmação: mobile                       | Sem frame. Tela cheia, metadados em grade 2 × 2, tabela com fonte menor e ID do token sem quebra.                                                                                                                                                                                                 | Caber em 390 px                                                                                                 |
+| Confirmação: metadados longos             | Com nome de carteira longo (Coinbase Wallet), o valor quebra linha em vez de ser cortado.                                                                                                                                                                                                         | Sem perda de conteúdo                                                                                           |

@@ -1,6 +1,7 @@
 import { publicClientApi } from '@/lib/http'
 import type {
   HealthStatus,
+  OrderOutcome,
   SimulationResetRequest,
   SimulationState,
   SimulationUpdate,
@@ -32,6 +33,14 @@ export async function resetSimulation(request: SimulationResetRequest = {}) {
 export async function expireSessions() {
   const { data } = await publicClientApi.post<SimulationState>(
     '/__simulation/expire-sessions',
+  )
+  return data
+}
+
+export async function settleOrder(orderId: string, outcome: OrderOutcome) {
+  const { data } = await publicClientApi.post<SimulationState>(
+    `/__simulation/orders/${encodeURIComponent(orderId)}/settle`,
+    { outcome },
   )
   return data
 }

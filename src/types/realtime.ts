@@ -1,4 +1,5 @@
 import type { EthAmount } from './nft'
+import type { OrderStatus } from './order'
 
 export type RealtimeResourceType = 'nft' | 'order' | 'wallet-connection'
 
@@ -25,8 +26,20 @@ export interface WalletDisconnectedData {
   reason: string
 }
 
+/**
+ * Mudança de estado do pedido, só para as sessões do dono. Leva o estado
+ * completo do ciclo de vida: o recibo (itens e valores) nunca muda.
+ */
+export interface OrderUpdatedData {
+  status: OrderStatus
+  transactionHash: string | null
+  refusalReason: string | null
+  updatedAt: string
+}
+
 export interface RealtimeEventMap {
   'nft.updated': RealtimeEnvelope<NftUpdatedData>
+  'order.updated': RealtimeEnvelope<OrderUpdatedData>
   'wallet.disconnected': RealtimeEnvelope<WalletDisconnectedData>
 }
 

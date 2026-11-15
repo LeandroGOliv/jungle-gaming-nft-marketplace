@@ -48,6 +48,24 @@ export function createSimulationHandlers(apiUrl: string, runtime: MockRuntime) {
       }
     }),
 
+    http.post<{ orderId: string }>(
+      `${base}/orders/:orderId/settle`,
+      async ({ request, params }) => {
+        const body = (await request.json().catch(() => ({}))) as {
+          outcome?: unknown
+        }
+        if (body.outcome !== 'confirmed' && body.outcome !== 'refused') {
+          return invalid(new Error('Informe o desfecho: confirmed ou refused.'))
+        }
+        try {
+          control.settleOrder(params.orderId, body.outcome)
+          return HttpResponse.json(control.getState())
+        } catch (error) {
+          return invalid(error)
+        }
+      },
+    ),
+
     http.post(`${base}/expire-sessions`, () => {
       control.expireSessions()
       return HttpResponse.json(control.getState())

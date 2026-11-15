@@ -143,7 +143,7 @@ test.describe('pagamento', () => {
       .click()
     await expect(changesAlert(page)).toHaveCount(0)
     await confirmButton(page).click()
-    await expect(page).toHaveURL(/\/pedidos\/ord_\d+$/)
+    await expect(page).toHaveURL(/\/pagamento\?pedido=ord_\d+$/)
     const state = await mocks.state()
     expect(state.counts.orders).toBe(3)
   })
@@ -185,7 +185,7 @@ test.describe('pagamento', () => {
       .getByRole('button', { name: 'Aceitar novos valores' })
       .click()
     await confirmButton(page).click()
-    await expect(page).toHaveURL(/\/pedidos\/ord_\d+$/)
+    await expect(page).toHaveURL(/\/pagamento\?pedido=ord_\d+$/)
   })
 
   test('cupom expirado na confirmação muda o total', async ({

@@ -5,6 +5,7 @@ import {
   createNetworkHandler,
   resolveLatency,
 } from './network'
+import { settleOrder } from './orders'
 import { bridgeStoreToRealtime, createRealtimeHub } from './realtime'
 import {
   createScenarioDb,
@@ -16,12 +17,14 @@ import { DEFAULT_SESSION_TTL_MS, lookupSession } from './sessions'
 import { STORAGE_PREFIX, readJson, writeJson } from './storage'
 import type { KeyValueStorage } from './storage'
 import type { WalletConnectionRecord } from './db'
+import type { Order } from '@/types/order'
 import type { RealtimeEnvelope, WalletDisconnectedData } from '@/types/realtime'
 import type {
   FaultRule,
   LatencyPresetId,
   MockControlApi,
   NftPatch,
+  OrderOutcome,
   ScenarioId,
   SimulationSettings,
   SimulationState,
@@ -101,9 +104,13 @@ export function createMockRuntime({
   })
   let resolveDelay = createDelayResolver(persisted.settings.seed)
 
+  // Queda temporária do cenário de desconexão: só em memória, para um refresh
+  // no meio dela não deixar o tempo real desligado para sempre.
+  let outageUntil = 0
   const hub = createRealtimeHub({
     path: socketPath,
-    isAvailable: () => persisted.settings.realtimeAvailable,
+    isAvailable: () =>
+      persisted.settings.realtimeAvailable && Date.now() >= outageUntil,
     resolveUser: (auth) => {
       const token = typeof auth?.token === 'string' ? auth.token : null
       const lookup = lookupSession(store.state, token, Date.now())
@@ -124,6 +131,8 @@ export function createMockRuntime({
     saveSettings()
     resolveDelay = createDelayResolver(settings.seed)
     hub.setAvailable(settings.realtimeAvailable)
+    clearOrderTimers()
+    outageUntil = 0
     store.replace(createScenarioDb(settings.scenarioId))
   }
 
@@ -198,6 +207,9 @@ export function createMockRuntime({
   }
 
   const DISCONNECT_AFTER_MS = 3_000
+  const ORDER_SETTLE_MS = 2_500
+  const ORDER_OUTAGE_START_MS = 1_000
+  const ORDER_OUTAGE_MS = 5_000
 
   /** Chamado após cada conexão criada: aplica o comportamento do cenário. */
   function onWalletConnected(connection: WalletConnectionRecord) {
@@ -210,6 +222,57 @@ export function createMockRuntime({
         ),
       DISCONNECT_AFTER_MS,
     )
+  }
+
+  const orderTimers = new Set<ReturnType<typeof setTimeout>>()
+
+  function later(ms: number, run: () => void) {
+    const timer = setTimeout(() => {
+      orderTimers.delete(timer)
+      run()
+    }, ms)
+    orderTimers.add(timer)
+  }
+
+  function clearOrderTimers() {
+    for (const timer of orderTimers) clearTimeout(timer)
+    orderTimers.clear()
+  }
+
+  function settle(id: string, outcome: OrderOutcome) {
+    const order = store.state.orders.find((o) => o.id === id)
+    if (!order) throw new SimulationError(`Pedido inexistente: ${id}`)
+    if (order.status !== 'pending') {
+      throw new SimulationError(`O pedido ${id} já terminou (${order.status}).`)
+    }
+    store.write((db, tx) => settleOrder(db, tx, id, outcome))
+  }
+
+  /**
+   * Desfecho automático do pedido pendente, contado a partir da criação: um
+   * refresh no meio (que reinicia o worker) reagenda pelo tempo que falta.
+   */
+  function scheduleSettlement(order: Order) {
+    const behaviour = checkoutScenario()?.order
+    const mode = behaviour?.settle ?? 'confirm'
+    if (mode === 'manual') return
+    const outcome: OrderOutcome = mode === 'refuse' ? 'refused' : 'confirmed'
+    const elapsed = Date.now() - Date.parse(order.createdAt)
+    const remaining = Math.max(0, ORDER_SETTLE_MS - elapsed)
+
+    if (behaviour?.disconnectWhilePending && elapsed < ORDER_OUTAGE_START_MS) {
+      later(ORDER_OUTAGE_START_MS - elapsed, () => {
+        outageUntil = Date.now() + ORDER_OUTAGE_MS
+        hub.setAvailable(false)
+      })
+    }
+    later(remaining, () => {
+      if (
+        store.state.orders.find((o) => o.id === order.id)?.status === 'pending'
+      ) {
+        settle(order.id, outcome)
+      }
+    })
   }
 
   const checkoutScenario = () =>
@@ -240,6 +303,14 @@ export function createMockRuntime({
       realtimeConnections: hub.connectionCount(),
       realtimeUsers: hub.connectionUsers(),
       sessionTtlMs: sessionTtlMs(),
+      pendingOrders: store.state.orders
+        .filter((o) => o.status === 'pending')
+        .map(({ id, userId, totalEth, createdAt }) => ({
+          id,
+          userId,
+          totalEth,
+          createdAt,
+        })),
     }
   }
 
@@ -266,6 +337,12 @@ export function createMockRuntime({
     emit: (event, payload) => hub.broadcast(event, payload),
     expireSessions,
     disconnectWallets,
+    settleOrder: settle,
+  }
+
+  // O worker reinicia a cada refresh: pedidos pendentes retomam o desfecho.
+  for (const order of store.state.orders) {
+    if (order.status === 'pending') scheduleSettlement(order)
   }
 
   const networkHandler = createNetworkHandler({
@@ -285,6 +362,7 @@ export function createMockRuntime({
     sessionTtlMs,
     checkoutScenario,
     onWalletConnected,
+    scheduleSettlement,
     updateNft,
     networkHandler,
     realtimeHandler: hub.handler,

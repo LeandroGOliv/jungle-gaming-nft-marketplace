@@ -9,12 +9,10 @@ import {
 } from '@/lib/http-error'
 import {
   connectWallet,
-  createOrder,
   disconnectWallet,
   getWalletConnection,
 } from '@/services/checkout'
 import type {
-  CreateOrderRequest,
   CreateWalletConnectionRequest,
   WalletConnection,
 } from '@/types/checkout'
@@ -177,31 +175,4 @@ export function useWalletConnection() {
   )
 
   return { state, connect, reset, markDisconnected, isConnectedTo }
-}
-
-/**
- * Chave de idempotência da tentativa de compra: a mesma enquanto o conteúdo do
- * pedido não muda (clique repetido, nova tentativa após falha), uma nova
- * quando o colecionador altera algo.
- */
-function useIdempotencyKey() {
-  const current = useRef<{ fingerprint: string; key: string } | null>(null)
-  return (fingerprint: string) => {
-    if (current.current?.fingerprint !== fingerprint) {
-      current.current = { fingerprint, key: crypto.randomUUID() }
-    }
-    return current.current.key
-  }
-}
-
-const orderFingerprint = ({ connectionId: _id, ...rest }: CreateOrderRequest) =>
-  JSON.stringify(rest)
-
-/** `POST /orders`: o pedido nasce pendente; o ciclo de vida segue na tela do pedido. */
-export function useCreateOrder() {
-  const keyFor = useIdempotencyKey()
-  return useMutation({
-    mutationFn: (request: CreateOrderRequest) =>
-      createOrder(keyFor(orderFingerprint(request)), request),
-  })
 }
