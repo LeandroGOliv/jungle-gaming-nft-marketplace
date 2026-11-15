@@ -1,4 +1,6 @@
+import type { CollectorInput } from './checkout'
 import type { BlockchainNetwork, EditionLabel, EthAmount } from './nft'
+import type { WalletProvider } from './wallet'
 
 export interface CartItem {
   nftId: string
@@ -33,8 +35,13 @@ export interface Order {
   networkFeeEth: EthAmount
   totalEth: EthAmount
   couponCode: string | null
-  walletId: string
+  /** Carteira cadastrada usada; `null` quando o colecionador informou outra. */
+  walletId: string | null
+  walletAddress: string
+  provider: WalletProvider
   network: BlockchainNetwork
+  /** Dados do colecionador como enviados no pagamento. */
+  collector: CollectorInput | null
   /** Presente quando a simulação confirma o pagamento. */
   transactionHash: string | null
   refusalReason: string | null

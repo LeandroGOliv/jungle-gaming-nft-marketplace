@@ -17,6 +17,17 @@ import type {
   ScenarioSummary,
 } from '@/types/simulation'
 
+/**
+ * Comportamento do checkout no cenário. `onOrderAttempt` altera o catálogo (ou
+ * o cupom) na primeira tentativa de pedido, antes da validação: a mudança
+ * acontece "durante a compra" e sai também pelo Socket.IO.
+ */
+export interface CheckoutScenario {
+  onOrderAttempt?: 'price-change' | 'sold-out' | 'coupon-expired'
+  /** `refuse-first`: a primeira conexão é recusada; `disconnect`: a carteira cai após conectar. */
+  connection?: 'refuse-first' | 'disconnect'
+}
+
 interface Scenario extends ScenarioSummary {
   latency: LatencyPresetId
   faults: Array<FaultRule>
@@ -25,7 +36,36 @@ interface Scenario extends ScenarioSummary {
   sessionTtlMs?: number
   /** Ajusta os dados iniciais; ausente usa as fixtures como estão. */
   prepare?: (db: MockDb) => void
+  checkout?: CheckoutScenario
 }
+
+/** Carrinho da Nova pronto para o pagamento: dois NFTs e o cupom KURIO10. */
+function prepareCheckoutCart(db: MockDb) {
+  db.carts.usr_nova = {
+    items: [
+      { nftId: 'emerald-ape-042', editionId: 'ed-50', quantity: 2 },
+      { nftId: 'violet-nomad-314', editionId: 'ed-10', quantity: 1 },
+    ],
+    couponCode: 'KURIO10',
+    version: 1,
+  }
+}
+
+const checkoutScenario = (
+  id: ScenarioId,
+  label: string,
+  description: string,
+  checkout?: CheckoutScenario,
+): Scenario => ({
+  id,
+  label,
+  description,
+  latency: 'default',
+  faults: [],
+  realtimeAvailable: true,
+  prepare: prepareCheckoutCart,
+  checkout,
+})
 
 /**
  * Cenários gerais de rede e dados. Os casos de cada recurso (cupom expirado,
@@ -153,6 +193,41 @@ const SCENARIOS: Array<Scenario> = [
     ],
     realtimeAvailable: true,
   },
+  checkoutScenario(
+    'checkout',
+    'Checkout pronto',
+    'O carrinho da Nova já tem dois NFTs e o cupom KURIO10, para ir direto ao pagamento.',
+  ),
+  checkoutScenario(
+    'checkout-price-change',
+    'Preço muda durante a compra',
+    'Carrinho do checkout; na primeira confirmação o preço de um item sobe e o pedido pede nova revisão.',
+    { onOrderAttempt: 'price-change' },
+  ),
+  checkoutScenario(
+    'checkout-sold-out',
+    'Edição esgota durante a compra',
+    'Carrinho do checkout; na primeira confirmação uma edição do pedido esgota.',
+    { onOrderAttempt: 'sold-out' },
+  ),
+  checkoutScenario(
+    'checkout-coupon-expired',
+    'Cupom expira durante a compra',
+    'Carrinho do checkout; na primeira confirmação o cupom KURIO10 expira e o total muda.',
+    { onOrderAttempt: 'coupon-expired' },
+  ),
+  checkoutScenario(
+    'wallet-refused',
+    'Carteira recusa a conexão',
+    'Carrinho do checkout; a primeira conexão de carteira é recusada e a seguinte é aceita.',
+    { connection: 'refuse-first' },
+  ),
+  checkoutScenario(
+    'wallet-disconnect',
+    'Carteira desconecta',
+    'Carrinho do checkout; a carteira se desconecta 3 s depois de conectar (evento wallet.disconnected).',
+    { connection: 'disconnect' },
+  ),
 ]
 
 export const scenarioSummaries: Array<ScenarioSummary> = SCENARIOS.map(
@@ -180,6 +255,9 @@ export function createScenarioDb(id: ScenarioId): MockDb {
     favorites: favoriteFixtures,
     carts: cartFixtures,
     orders: orderFixtures,
+    orderRequests: {},
+    walletConnections: [],
+    checkoutTriggers: [],
     coupons: couponFixtures,
     sequence: orderFixtures.length,
   })

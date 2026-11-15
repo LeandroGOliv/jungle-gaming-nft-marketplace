@@ -5,15 +5,20 @@ import type { KeyValueStorage } from './storage'
 import type { Nft } from '@/types/nft'
 import type { CartItem, Order } from '@/types/order'
 import type { RealtimeResourceType } from '@/types/realtime'
+import type { WalletConnection } from '@/types/checkout'
 import type { Wallet } from '@/types/wallet'
 
 /** Mudar o formato do estado exige subir este número: o salvo antigo é descartado. */
-export const DB_SCHEMA_VERSION = 4
+export const DB_SCHEMA_VERSION = 5
 
 export interface CartRecord {
   items: Array<CartItem>
   couponCode: string | null
   version: number
+}
+
+export interface WalletConnectionRecord extends WalletConnection {
+  userId: string
 }
 
 export interface SessionRecord {
@@ -36,6 +41,11 @@ export interface MockDb {
   /** Por dono do carrinho: id de usuário ou id de carrinho de visitante (`guest_*`). */
   carts: Record<string, CartRecord>
   orders: Array<Order>
+  /** Impressão da requisição que criou cada pedido, por id: base da idempotência. */
+  orderRequests: Record<string, string>
+  walletConnections: Array<WalletConnectionRecord>
+  /** Gatilhos de cenário de checkout já disparados (uma vez por reset). */
+  checkoutTriggers: Array<string>
   coupons: Array<CouponRecord>
   /** Contador para ids gerados na simulação. */
   sequence: number

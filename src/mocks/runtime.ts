@@ -15,6 +15,8 @@ import {
 import { DEFAULT_SESSION_TTL_MS, lookupSession } from './sessions'
 import { STORAGE_PREFIX, readJson, writeJson } from './storage'
 import type { KeyValueStorage } from './storage'
+import type { WalletConnectionRecord } from './db'
+import type { RealtimeEnvelope, WalletDisconnectedData } from '@/types/realtime'
 import type {
   FaultRule,
   LatencyPresetId,
@@ -167,6 +169,52 @@ export function createMockRuntime({
     })
   }
 
+  const epoch = () => Date.parse(persisted.resetAt).toString(36)
+
+  /** Encerra a conexão e avisa só as sessões do dono pelo Socket.IO. */
+  function disconnectWallet(id: string, reason: string) {
+    const record = store.state.walletConnections.find((c) => c.id === id)
+    if (!record || record.status !== 'connected') return
+    const updated = store.write((db, tx) => {
+      const connection = db.walletConnections.find((c) => c.id === id)!
+      connection.status = 'disconnected'
+      tx.touch('wallet-connection', connection)
+      return { ...connection }
+    })
+    const envelope: RealtimeEnvelope<WalletDisconnectedData> = {
+      eventId: `evt_wallet_${updated.id}_v${updated.version}_${epoch()}`,
+      resource: { type: 'wallet-connection', id: updated.id },
+      version: updated.version,
+      emittedAt: new Date().toISOString(),
+      data: { reason },
+    }
+    hub.sendToUser(updated.userId, 'wallet.disconnected', envelope)
+  }
+
+  function disconnectWallets() {
+    for (const connection of store.state.walletConnections) {
+      disconnectWallet(connection.id, 'A carteira encerrou a conexão.')
+    }
+  }
+
+  const DISCONNECT_AFTER_MS = 3_000
+
+  /** Chamado após cada conexão criada: aplica o comportamento do cenário. */
+  function onWalletConnected(connection: WalletConnectionRecord) {
+    if (checkoutScenario()?.connection !== 'disconnect') return
+    setTimeout(
+      () =>
+        disconnectWallet(
+          connection.id,
+          'A carteira foi desconectada no provedor.',
+        ),
+      DISCONNECT_AFTER_MS,
+    )
+  }
+
+  const checkoutScenario = () =>
+    getScenario(persisted.settings.scenarioId).checkout
+
   const sessionTtlMs = () =>
     getScenario(persisted.settings.scenarioId).sessionTtlMs ??
     DEFAULT_SESSION_TTL_MS
@@ -217,6 +265,7 @@ export function createMockRuntime({
     updateNft,
     emit: (event, payload) => hub.broadcast(event, payload),
     expireSessions,
+    disconnectWallets,
   }
 
   const networkHandler = createNetworkHandler({
@@ -234,6 +283,9 @@ export function createMockRuntime({
     control,
     update,
     sessionTtlMs,
+    checkoutScenario,
+    onWalletConnected,
+    updateNft,
     networkHandler,
     realtimeHandler: hub.handler,
   }
