@@ -24,6 +24,7 @@
   --text-primary: #f7f3ec;
   --text-secondary: #cfb28c;
   --text-accent: #e89b55;
+  --text-coral: #f0805f;
   --cream: #f5f1eb;
   --elevated: #fbfbfb;
 
@@ -41,8 +42,8 @@
   --muted-foreground: var(--text-secondary);
   --accent: var(--surface-dark);
   --accent-foreground: var(--text-primary);
-  /* O Figma não define cor de erro; ajustar quando as telas forem detalhadas. */
-  --destructive: #e5484d;
+  /* O Figma não tem cor de erro; o coral do divisor de abas do login é a mais quente da paleta. */
+  --destructive: var(--text-coral);
   --border: var(--border-strong);
   --input: var(--border-soft);
   --ring: var(--brand-primary);
@@ -82,6 +83,7 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-accent: var(--text-accent);
+  --color-text-coral: var(--text-coral);
   --color-elevated: var(--elevated);
 
   --radius-sm: calc(var(--radius) - 4px);

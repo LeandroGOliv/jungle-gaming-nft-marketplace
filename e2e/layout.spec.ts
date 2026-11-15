@@ -78,7 +78,7 @@ test.describe('layout base', () => {
     ).toBeVisible()
   })
 
-  test('"Entrar" leva ao login carregando o local de retorno', async ({
+  test('"Entrar" abre o login sobre a tela atual', async ({
     page,
     mocks,
     viewport,
@@ -88,27 +88,11 @@ test.describe('layout base', () => {
 
     await page.getByRole('banner').getByRole('link', { name: 'Entrar' }).click()
 
-    await expect(page).toHaveURL(/\/login\?redirect=/)
-    const redirect = new URL(page.url()).searchParams.get('redirect')
-    expect(redirect).toBe('/em-breve?secao=aprenda')
-  })
-
-  test('no login, "Entrar" preserva o retorno e descarta destino externo', async ({
-    page,
-    mocks,
-    viewport,
-  }) => {
-    test.skip(isMobile(viewport?.width), 'O botão Entrar fica no header.')
-    const signIn = page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Entrar' })
-
-    await mocks.goto('/login?redirect=%2Fcarrinho')
-    await expect(signIn).toHaveAttribute('href', '/login?redirect=%2Fcarrinho')
-
-    // `/\evil.com` resolve para outro host no parser de URL do navegador.
-    await mocks.goto('/login?redirect=%2F%5Cevil.com')
-    await expect(signIn).toHaveAttribute('href', '/login')
+    await expect(page.getByRole('dialog')).toBeVisible()
+    const url = new URL(page.url())
+    expect(url.pathname).toBe('/em-breve')
+    expect(url.searchParams.get('secao')).toBe('aprenda')
+    expect(url.searchParams.get('auth')).toBe('entrar')
   })
 
   test('destaque do header e aria-current indicam a mesma seção', async ({
@@ -223,8 +207,13 @@ test.describe('layout base', () => {
       tabBar.getByRole('link', { name: 'Carrinho' }),
     ).toHaveAttribute('aria-current', 'page')
 
-    // "Minha conta" agrupa perfil, carteiras e login.
-    await mocks.goto('/login')
+    // "Minha conta" agrupa perfil e carteiras, que exigem sessão.
+    await mocks.goto('/perfil')
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('E-mail').fill('nova@colecionador.test')
+    await dialog.getByLabel('Senha', { exact: true }).fill('Kurio@2026')
+    await dialog.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await expect(page).toHaveURL(/\/perfil$/)
     await expect(
       tabBar.getByRole('link', { name: 'Minha conta' }),
     ).toHaveAttribute('aria-current', 'page')

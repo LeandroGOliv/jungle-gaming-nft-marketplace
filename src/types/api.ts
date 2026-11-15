@@ -1,3 +1,11 @@
+import type { AuthErrorReason } from './auth'
+
+/**
+ * Casos de negócio que o cliente distingue dentro de uma categoria de erro.
+ * Cada fluxo acrescenta os seus (carrinho, checkout...).
+ */
+export type ApiErrorReason = AuthErrorReason
+
 /**
  * Corpo de toda resposta de erro da API. `code` é a categoria genérica,
  * derivada do status; `reason` detalha o caso de negócio quando o cliente
@@ -7,7 +15,7 @@ export interface ApiError {
   status: ApiErrorStatus
   code: ApiErrorCode
   message: string
-  reason?: string
+  reason?: ApiErrorReason
   /** Mensagens por campo do formulário, presentes nos erros 422. */
   fieldErrors?: Record<string, string>
   /** Indica se repetir a mesma requisição pode dar certo. */
