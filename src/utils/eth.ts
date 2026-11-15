@@ -34,3 +34,48 @@ export function fromHundredths(hundredths: number): EthAmount {
   const digits = String(Math.trunc(hundredths)).padStart(3, '0')
   return `${digits.slice(0, -2)}.${digits.slice(-2)}`
 }
+
+const WEI_PER_ETH = 10n ** BigInt(DECIMALS)
+
+/** String decimal mínima: sem zeros à direita nem ponto sobrando. */
+export function fromWei(wei: bigint): EthAmount {
+  if (wei < 0n) throw new Error('Valor em ETH negativo.')
+  const whole = wei / WEI_PER_ETH
+  const fraction = (wei % WEI_PER_ETH)
+    .toString()
+    .padStart(DECIMALS, '0')
+    .replace(/0+$/, '')
+  return fraction ? `${whole}.${fraction}` : `${whole}`
+}
+
+export function addEth(a: EthAmount, b: EthAmount): EthAmount {
+  return fromWei(toWei(a) + toWei(b))
+}
+
+/** Diferença sem ficar negativa: um desconto nunca passa do valor. */
+export function subEth(a: EthAmount, b: EthAmount): EthAmount {
+  const diff = toWei(a) - toWei(b)
+  return fromWei(diff > 0n ? diff : 0n)
+}
+
+export function sumEth(values: Array<EthAmount>): EthAmount {
+  return fromWei(values.reduce((total, value) => total + toWei(value), 0n))
+}
+
+/** Preço unitário × quantidade inteira não negativa. */
+export function multiplyEth(value: EthAmount, quantity: number): EthAmount {
+  if (!Number.isSafeInteger(quantity) || quantity < 0) {
+    throw new Error(`Quantidade inválida: ${quantity}`)
+  }
+  return fromWei(toWei(value) * BigInt(quantity))
+}
+
+/** `percent` em string decimal (`"10"`, `"12.5"`); arredonda para baixo no wei. */
+export function percentOfEth(value: EthAmount, percent: string): EthAmount {
+  const scaled = toWei(percent)
+  return fromWei((toWei(value) * scaled) / (100n * WEI_PER_ETH))
+}
+
+export function minEth(a: EthAmount, b: EthAmount): EthAmount {
+  return compareEth(a, b) <= 0 ? fromWei(toWei(a)) : fromWei(toWei(b))
+}

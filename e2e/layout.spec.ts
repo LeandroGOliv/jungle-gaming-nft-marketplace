@@ -203,9 +203,11 @@ test.describe('layout base', () => {
     await tabBar.getByRole('link', { name: 'Carrinho' }).focus()
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/carrinho$/)
+    // Como no frame mobile, o carrinho tem cabeçalho e resumo próprios, sem a tab bar.
     await expect(
-      tabBar.getByRole('link', { name: 'Carrinho' }),
-    ).toHaveAttribute('aria-current', 'page')
+      page.getByRole('heading', { level: 1, name: 'Carrinho de NFTs' }),
+    ).toBeVisible()
+    await expect(tabBar).toBeHidden()
 
     // "Minha conta" agrupa perfil e carteiras, que exigem sessão.
     await mocks.goto('/perfil')

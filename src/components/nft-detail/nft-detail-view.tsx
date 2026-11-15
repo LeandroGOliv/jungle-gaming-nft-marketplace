@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { CATEGORY_LABELS } from '@/components/catalog/labels'
 import { MaskIcon } from '@/components/layout/mask-icon'
 import { PageContainer } from '@/components/layout/page-container'
+import { useAddToCart } from '@/hooks/use-cart'
+import { describeRequestError } from '@/lib/http-error'
 import { cn } from '@/lib/utils'
 import type { Nft, NftRarity } from '@/types/nft'
 import { formatEth } from '@/utils/eth'
@@ -48,9 +50,56 @@ function usePurchaseSelection(nft: Nft) {
   }
 }
 
+type PurchaseSelection = ReturnType<typeof usePurchaseSelection>
+
+/**
+ * Inclusão no carrinho a partir do detalhe. "Comprar" inclui e leva ao
+ * carrinho; o botão do carrinho (mobile) inclui e fica na página, com o
+ * resultado visível ao lado dos botões.
+ */
+function useAddSelectionToCart(nft: Nft, selection: PurchaseSelection) {
+  const navigate = useNavigate()
+  const add = useAddToCart()
+  const [lastAdded, setLastAdded] = useState<string | null>(null)
+
+  const submit = (goToCart: boolean) => {
+    if (!selection.edition || selection.soldOut || add.isPending) return
+    setLastAdded(null)
+    add.mutate(
+      {
+        nftId: nft.id,
+        editionId: selection.edition.id,
+        quantity: selection.quantity,
+        nftName: nft.name,
+      },
+      {
+        onSuccess: () => {
+          if (goToCart) void navigate({ to: '/carrinho' })
+          else setLastAdded(`${nft.name} adicionado ao carrinho.`)
+        },
+      },
+    )
+  }
+
+  return {
+    buy: () => submit(true),
+    addAndStay: () => submit(false),
+    isPending: add.isPending,
+    disabled: selection.soldOut || !selection.edition,
+    status: add.isError
+      ? { tone: 'error' as const, text: describeRequestError(add.error) }
+      : lastAdded
+        ? { tone: 'success' as const, text: lastAdded }
+        : null,
+  }
+}
+
+type AddToCartAction = ReturnType<typeof useAddSelectionToCart>
+
 export function NftDetailView({ nft }: { nft: Nft }) {
   const [imageIndex, setImageIndex] = useState(0)
   const selection = usePurchaseSelection(nft)
+  const cart = useAddSelectionToCart(nft, selection)
 
   const editionPicker = (
     <EditionPicker
@@ -155,12 +204,16 @@ export function NftDetailView({ nft }: { nft: Nft }) {
                   disabled={selection.soldOut}
                 />
                 <div className="flex gap-2">
-                  <BuyButton className="h-10 min-w-[130px] rounded-md text-sm leading-5 font-bold">
+                  <BuyButton
+                    action={cart}
+                    className="h-10 min-w-[130px] rounded-md text-sm leading-5 font-bold"
+                  >
                     COMPRAR
                   </BuyButton>
                   <FavoriteButton nft={nft} variant="labeled" />
                 </div>
               </div>
+              <CartStatus status={cart.status} className="-mt-2" />
 
               <div className="flex flex-col gap-3">
                 {tokenInfo}
@@ -180,33 +233,65 @@ export function NftDetailView({ nft }: { nft: Nft }) {
         available={selection.available}
         soldOut={selection.soldOut}
         onQuantityChange={selection.changeQuantity}
+        action={cart}
       />
     </article>
   )
 }
 
-/**
- * Ponto de integração do carrinho: a issue do Carrinho liga a inclusão aqui.
- * Até lá o botão fica desabilitado, sem simular sucesso.
- */
+/** Inclui a seleção no carrinho e leva até ele. */
 function BuyButton({
+  action,
   className,
   children,
 }: {
+  action: AddToCartAction
   className?: string
   children: React.ReactNode
 }) {
   return (
     <button
       type="button"
-      disabled
+      onClick={action.buy}
+      disabled={action.disabled}
+      aria-busy={action.isPending}
       className={cn(
-        'focus-ring bg-primary px-4 text-ink disabled:cursor-not-allowed disabled:opacity-50',
+        'focus-ring cursor-pointer bg-primary px-4 text-ink disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress aria-busy:opacity-70',
         className,
       )}
     >
       {children}
     </button>
+  )
+}
+
+/** Resultado da última inclusão, visível; o anúncio para leitores de tela sai do hook. */
+function CartStatus({
+  status,
+  className,
+}: {
+  status: AddToCartAction['status']
+  className?: string
+}) {
+  if (!status) return null
+  return (
+    <p
+      className={cn(
+        'text-sm leading-5',
+        status.tone === 'error' ? 'text-text-coral' : 'text-text-secondary',
+        className,
+      )}
+    >
+      {status.text}{' '}
+      {status.tone === 'success' && (
+        <Link
+          to="/carrinho"
+          className="focus-ring rounded-sm font-bold text-text-accent underline underline-offset-2"
+        >
+          Ver carrinho
+        </Link>
+      )}
+    </p>
   )
 }
 
@@ -397,12 +482,14 @@ function MobileBuyBar({
   available,
   soldOut,
   onQuantityChange,
+  action,
 }: {
   priceEth: string
   quantity: number
   available: number
   soldOut: boolean
   onQuantityChange: (value: number) => void
+  action: AddToCartAction
 }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 rounded-t-[40px] bg-card px-6 pt-5 pb-9 shadow-[0_0_20px_rgb(10_6_4/0.45)] md:hidden">
@@ -420,15 +507,21 @@ function MobileBuyBar({
             {formatEth(priceEth)}
           </p>
         </div>
+        <CartStatus status={action.status} className="-my-2" />
         <div className="flex gap-3">
-          <BuyButton className="h-[60px] w-[196px] rounded-[40px] bg-[linear-gradient(103deg,var(--brand-primary)_0%,rgb(210_138_76/0.8)_100%)] text-base leading-5 font-bold">
+          <BuyButton
+            action={action}
+            className="h-[60px] w-[196px] rounded-[40px] bg-[linear-gradient(103deg,var(--brand-primary)_0%,rgb(210_138_76/0.8)_100%)] text-base leading-5 font-bold"
+          >
             Comprar NFT
           </BuyButton>
           <button
             type="button"
-            disabled
+            onClick={action.addAndStay}
+            disabled={action.disabled}
+            aria-busy={action.isPending}
             aria-label="Adicionar ao carrinho"
-            className="focus-ring flex size-[60px] items-center justify-center rounded-[40px] border border-border bg-[#2f1d15] text-brand-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            className="focus-ring flex size-[60px] cursor-pointer items-center justify-center rounded-[40px] border border-border bg-[#2f1d15] text-brand-secondary disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress"
           >
             <MaskIcon src="/icons/detail-shop.svg" width={18} height={17} />
           </button>

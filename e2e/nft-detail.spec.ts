@@ -94,11 +94,6 @@ test.describe('detalhe do NFT', () => {
     await editions(page).getByRole('radio', { name: '1/50' }).click()
     await expect(value).toHaveText('1')
     await expect(increase).toBeEnabled()
-
-    // O carrinho é outra issue: a compra não aparenta sucesso.
-    await expect(
-      page.getByRole('button', { name: /comprar/i }).first(),
-    ).toBeDisabled()
   })
 
   test('visitante vai ao login ao favoritar e volta ao detalhe', async ({
