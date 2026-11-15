@@ -1,4 +1,5 @@
 import { createAuthHandlers } from './handlers/auth'
+import { createNftHandlers } from './handlers/nfts'
 import { createSimulationHandlers } from './handlers/simulation'
 import type { MockRuntime } from './runtime'
 
@@ -11,6 +12,7 @@ export function createHandlers(apiUrl: string, runtime: MockRuntime) {
     runtime.networkHandler,
     ...createSimulationHandlers(apiUrl, runtime),
     ...createAuthHandlers(apiUrl, runtime),
+    ...createNftHandlers(apiUrl, runtime),
     runtime.realtimeHandler,
   ]
 }
