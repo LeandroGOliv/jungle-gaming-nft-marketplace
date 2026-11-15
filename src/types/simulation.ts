@@ -48,6 +48,7 @@ export type ScenarioId =
   | 'flaky'
   | 'short-session'
   | 'favorite-error'
+  | 'wallet-error'
 
 export interface ScenarioSummary {
   id: ScenarioId

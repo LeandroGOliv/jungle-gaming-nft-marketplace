@@ -5,10 +5,10 @@ import type { KeyValueStorage } from './storage'
 import type { Nft } from '@/types/nft'
 import type { CartItem, Order } from '@/types/order'
 import type { RealtimeResourceType } from '@/types/realtime'
-import type { Wallet } from '@/types/user'
+import type { Wallet } from '@/types/wallet'
 
 /** Mudar o formato do estado exige subir este número: o salvo antigo é descartado. */
-export const DB_SCHEMA_VERSION = 3
+export const DB_SCHEMA_VERSION = 4
 
 export interface CartRecord {
   items: Array<CartItem>

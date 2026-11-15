@@ -129,6 +129,30 @@ const SCENARIOS: Array<Scenario> = [
     ],
     realtimeAvailable: true,
   },
+  {
+    id: 'wallet-error',
+    label: 'Falha ao salvar carteira',
+    description:
+      'Fixtures completas; o primeiro cadastro ou edição de carteira responde 503 e o seguinte funciona, para exercitar a nova tentativa.',
+    latency: 'default',
+    faults: [
+      {
+        id: 'wallet-error-post',
+        method: 'POST',
+        path: '/wallets',
+        effect: { kind: 'http', status: 503 },
+        times: 1,
+      },
+      {
+        id: 'wallet-error-put',
+        method: 'PUT',
+        path: '/wallets/:walletId',
+        effect: { kind: 'http', status: 503 },
+        times: 1,
+      },
+    ],
+    realtimeAvailable: true,
+  },
 ]
 
 export const scenarioSummaries: Array<ScenarioSummary> = SCENARIOS.map(

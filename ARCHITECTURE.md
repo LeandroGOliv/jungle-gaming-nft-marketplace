@@ -401,6 +401,37 @@ Os listeners pertencem ao socket da sessão (ver [Política de sessão](#políti
 - **Ordem dos eventos**: uma resposta REST antiga que chegue depois de um evento mais novo sobrescreve o cache; o próximo evento ou a próxima revalidação corrige.
 - **Reconexão nos testes**: o `socket.io-client` espera até 5 s entre tentativas (com variação), então o teste de reconexão aceita até 15 s.
 
+## Carteiras
+
+### Contratos REST
+
+Todas as rotas usam `clientApi` e exigem sessão (401 sem ela). As respostas de sucesso trazem sempre a lista completa do usuário (`WalletsResponse`, principal antes da secundária), que vira o cache sem nova consulta. Os tipos ficam em `src/types/wallet.ts`.
+
+| Método e caminho         | Corpo                          | Resposta                | Erros                                                                                     |
+| ------------------------ | ------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------- |
+| `GET /wallets`           | —                              | `WalletsResponse`       | 401                                                                                       |
+| `POST /wallets`          | `CreateWalletRequest` (`slot`) | `WalletsResponse` (201) | 409 `WALLET_SLOT_TAKEN` (a posição já tem carteira); 422 com `fieldErrors`                |
+| `PUT /wallets/:walletId` | `UpdateWalletRequest`          | `WalletsResponse`       | 404 `WALLET_NOT_FOUND` (inclusive carteira de outro usuário, sem revelar que existe); 422 |
+
+Cada usuário tem no máximo uma carteira por posição (`primary`, `secondary`). Os campos seguem o formulário do Figma: nome de exibição, apelido, rede, nome do perfil, endereço `0x`, ENS ou carteira secundária (opcional), tipo de carteira, código de indicação, e-mail e nome ENS (sem o `.eth`). O enunciado não define os campos, então o Figma prevalece.
+
+A API repete as regras de formato do formulário e acrescenta duas que só ela conhece: o **código de indicação** precisa existir (`KURIO2026`, `GREENMINT` ou `SELVA10`, em `src/mocks/fixtures/users.ts`) e o **endereço** não pode repetir o da outra carteira do usuário. Os dois erros voltam no 422, no campo correspondente.
+
+No store, `wallets` guarda a lista por id de usuário; o esquema subiu para a versão 4, o que descarta um estado salvo antes. O cenário `wallet-error` faz o primeiro `POST` e o primeiro `PUT` responderem 503, e os seguintes funcionarem.
+
+### Cache
+
+A lista fica em `['user', userId, 'wallets']`, sob a chave do usuário: o logout e a troca de conta removem tudo o que está em `['user']`. Não há atualização otimista: o formulário só fecha com a resposta da API, que é gravada no cache e seguida de uma invalidação para reconciliar. Mutations não repetem sozinhas; depois de uma falha transitória o formulário mantém os valores e o colecionador envia de novo.
+
+### Decisões de UX
+
+- **Principal sem carteira:** o formulário fica aberto (o estado desenhado no Figma) e "Adicionar" leva o foco ao primeiro campo.
+- **Carteira cadastrada:** aparece um resumo (apelido, rede, tipo, endereço e ENS) com "Editar"; o formulário abre no lugar, com "Cancelar". Salvar fecha o formulário e anuncia "Carteira principal atualizada." (ou "cadastrada") na região viva.
+- **Secundária:** "Adicionar" abre o mesmo formulário da principal; o enunciado pede cadastro e edição das duas.
+- **Validação:** React Hook Form + Zod no cliente; os erros da API (422) voltam para o campo com foco no primeiro. Falhas de rede ou 5xx aparecem num alerta acima de "Salvar carteira". Enquanto a requisição está pendente, novos envios são ignorados.
+- **Estados:** skeleton com shimmer na geometria das duas seções, erro com "Tentar novamente" e `aria-busy` durante a atualização em segundo plano.
+- **Navegação da conta:** a "Account Sidebar" do Figma (`AccountLayout`, compartilhada com o perfil) aparece a partir de 1024 px. Atividade, Lista de interesse, Ofertas, Arquivos baixados e Suporte levam a `/em-breve`. Abaixo de 1024 px a tela usa o cabeçalho com "Voltar" do carrinho mobile.
+
 ## Desvios do Figma
 
 | Item                                      | Desvio                                                                                                                                                                                                                                                                                            | Motivo                                                                                                          |
@@ -449,3 +480,10 @@ Os listeners pertencem ao socket da sessão (ver [Política de sessão](#políti
 | Carrinho: relacionados no mobile          | O frame mobile não tem "Colecionadores também viram"; a seção aparece a partir de 768 px.                                                                                                                                                                                                         | Seguir o frame mobile                                                                                           |
 | Carrinho: estados                         | Vazio, erro, problema de disponibilidade, cupom aplicado e "Atualizando valores…" não estão no Figma. Usam o card `surface-card`, o coral dos erros e o `text-secondary` do layout.                                                                                                               | Estados não desenhados                                                                                          |
 | Carrinho: lixeira                         | Ícone "Iconly/Curved/Delete" exportado em SVG (`public/icons/cart-delete.svg`) e pintado como máscara.                                                                                                                                                                                            | Mesmo asset nos estados normal e hover                                                                          |
+| Carteiras: mobile e tablet                | Sem frame no Figma. Abaixo de 1024 px a sidebar some, entra o cabeçalho com "Voltar" e título do carrinho mobile, e os campos ficam em uma coluna (duas a partir de 768 px).                                                                                                                      |
+| Carteiras: resumo e "Editar"              | O Figma só desenha a principal vazia com o formulário aberto. A carteira cadastrada aparece num resumo com borda `border-strong` e o link vira "Editar"/"Cancelar".                                                                                                                               |
+| Carteiras: "Igual à carteira principal"   | O enunciado não descreve esse vínculo. O controle aparece desabilitado (60% de opacidade, "indisponível nesta versão" para leitores de tela), sem aparentar funcionar.                                                                                                                            |
+| Carteiras: campo opcional sem label       | "ENS ou carteira secundária (opcional)" só tem placeholder no Figma; ganhou um label visualmente oculto com o mesmo texto.                                                                                                                                                                        |
+| Carteiras: sufixo ".eth"                  | Desenhado como select, mas `.eth` é o único domínio aceito: o quadro é fixo, com a seta do Figma, e o campo descreve o sufixo para leitores de tela.                                                                                                                                              |
+| Carteiras: erros                          | Não estão no Figma. Seguem o login: mensagem em 13/16 em `text-coral` abaixo do campo e borda coral.                                                                                                                                                                                              |
+| Carteiras: ícones                         | Ícones da sidebar e a seta dos selects exportados do Figma em SVG (`public/icons/account-*.svg`, `select-arrow-down.svg`), com as cores originais.                                                                                                                                                |

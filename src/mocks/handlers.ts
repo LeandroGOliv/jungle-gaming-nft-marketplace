@@ -3,6 +3,7 @@ import { createCartHandlers } from './handlers/cart'
 import { createFavoriteHandlers } from './handlers/favorites'
 import { createNftHandlers } from './handlers/nfts'
 import { createSimulationHandlers } from './handlers/simulation'
+import { createWalletHandlers } from './handlers/wallets'
 import type { MockRuntime } from './runtime'
 
 /**
@@ -17,6 +18,7 @@ export function createHandlers(apiUrl: string, runtime: MockRuntime) {
     ...createNftHandlers(apiUrl, runtime),
     ...createFavoriteHandlers(apiUrl, runtime),
     ...createCartHandlers(apiUrl, runtime),
+    ...createWalletHandlers(apiUrl, runtime),
     runtime.realtimeHandler,
   ]
 }
