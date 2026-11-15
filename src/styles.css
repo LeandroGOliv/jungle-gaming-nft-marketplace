@@ -3,6 +3,11 @@
 @import '@fontsource-variable/roboto-mono';
 
 @custom-variant dark (&:is(.dark *));
+/*
+ * Os primitivos do shadcn (estilo radix-nova) usam `data-checked:`, mas o
+ * Radix marca o estado com `data-state="checked"`.
+ */
+@custom-variant data-checked (&[data-state='checked']);
 
 /*
  * Tokens do Figma (docs/figma/tokens.md). O layout tem um único tema, escuro,

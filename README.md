@@ -79,17 +79,53 @@ Todas são opcionais. Para sobrescrever, copie `.env.example` para `.env.local`.
 
 Os mocks são ativados por configuração e fazem parte do build de demonstração. As chamadas REST são interceptadas pelo service worker do MSW; os eventos em tempo real passam pelo `socket.io-client` e são interceptados pelo MSW com o binding de Socket.IO, usando apenas o transporte WebSocket.
 
+O estado simulado (catálogo, usuários, carteiras, favoritos, carrinhos e pedidos) fica salvo no `localStorage` do navegador e sobrevive ao refresh. Detalhes do funcionamento e das limitações estão em [`ARCHITECTURE.md`](ARCHITECTURE.md#camada-de-mocks).
+
 ### Credenciais fictícias
 
-Em construção.
+| Usuário     | E-mail                     | Senha        | Perfil                                                                  |
+| ----------- | -------------------------- | ------------ | ----------------------------------------------------------------------- |
+| Nova Sato   | `nova@colecionador.test`   | `Kurio@2026` | Carteira principal na Polygon, 3 favoritos, 1 pedido confirmado         |
+| Rafael Lima | `rafael@colecionador.test` | `Selva#2026` | Carteiras principal e secundária, 1 item no carrinho, 1 pedido recusado |
+
+As senhas não ficam salvas em claro: os mocks guardam só o hash SHA-256 com salt.
 
 ### Seleção e reset de cenários
 
-Em construção.
+Há três formas de controlar a simulação, todas sobre o mesmo estado:
+
+- **Página `/simulacao`**: mostra o estado atual e permite trocar de cenário, restaurar os dados, mudar a latência, derrubar as conexões em tempo real e disparar uma requisição de teste.
+- **URL**: abra qualquer rota com `?scenario=<cenário>` e/ou `?latency=<latência>`, por exemplo `/?scenario=empty&latency=slow`. Os parâmetros são aplicados no carregamento e removidos da URL, para o refresh não repetir o reset.
+- **Console ou testes**: `window.__mocks` expõe `reset()`, `selectScenario()`, `setLatency()`, `addFault()`, `setFaults()`, `setRealtimeAvailable()`, `updateNft()` e `emit()`.
+
+Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial do cenário e descarta as falhas adicionadas. A latência escolhida é preservada no reset.
+
+| Cenário        | O que acontece                                                                    |
+| -------------- | --------------------------------------------------------------------------------- |
+| `default`      | Fixtures completas, rede saudável com latência de 200–400 ms                      |
+| `empty`        | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
+| `offline`      | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
+| `timeout`      | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
+| `server-error` | Toda chamada à API responde 503                                                   |
+| `flaky`        | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
+
+| Latência       | Comportamento                                                                |
+| -------------- | ---------------------------------------------------------------------------- |
+| `none`         | Resposta imediata (padrão dos testes E2E)                                    |
+| `default`      | Sorteio entre 200 e 400 ms com semente fixa: a sequência se repete           |
+| `slow`         | 2,5 s fixos                                                                  |
+| `variable`     | Sorteio entre 100 ms e 2,5 s com semente fixa                                |
+| `out-of-order` | Alterna 1,5 s e 150 ms por endpoint: a resposta mais antiga chega por último |
 
 ### Como reproduzir os fluxos de falha
 
-Em construção.
+- **Sem conexão, timeout e erro 5xx**: abra `/simulacao`, aplique o cenário `offline`, `timeout` ou `server-error` e use "Enviar requisição", ou navegue pelas telas.
+- **Falha transitória com recuperação**: aplique `flaky`; as primeiras chamadas falham e a nova tentativa funciona.
+- **Respostas fora de ordem e carregamento lento**: escolha a latência `out-of-order` ou `slow`.
+- **Erro HTTP pontual** (qualquer status 401, 403, 404, 409, 422, 500 ou 503 em um endpoint): pelo console, por exemplo `window.__mocks.addFault({ id: 'fav', method: 'POST', path: '/favorites', effect: { kind: 'http', status: 503 }, times: 1 })`.
+- **Queda do tempo real**: em `/simulacao`, "Derrubar conexões" e depois "Restabelecer conexões".
+
+Os cenários específicos de cada fluxo (sessão expirada, cupom expirado, pagamento recusado etc.) entram junto com as telas correspondentes.
 
 ## Estrutura
 
