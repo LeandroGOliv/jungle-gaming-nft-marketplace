@@ -102,17 +102,21 @@ Há três formas de controlar a simulação, todas sobre o mesmo estado:
 
 Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial do cenário e descarta as falhas adicionadas. A latência escolhida é preservada no reset.
 
-| Cenário          | O que acontece                                                                    |
-| ---------------- | --------------------------------------------------------------------------------- |
-| `default`        | Fixtures completas, rede saudável com latência de 200–400 ms                      |
-| `empty`          | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
-| `offline`        | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
-| `timeout`        | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
-| `server-error`   | Toda chamada à API responde 503                                                   |
-| `flaky`          | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
-| `short-session`  | Fixtures completas; a sessão expira 1 minuto após o login                         |
-| `favorite-error` | Fixtures completas; incluir ou remover favoritos responde 503                     |
-| `wallet-error`   | Fixtures completas; o primeiro cadastro ou edição de carteira responde 503        |
+| Cenário            | O que acontece                                                                    |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `default`          | Fixtures completas, rede saudável com latência de 200–400 ms                      |
+| `empty`            | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
+| `offline`          | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
+| `timeout`          | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
+| `server-error`     | Toda chamada à API responde 503                                                   |
+| `flaky`            | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
+| `short-session`    | Fixtures completas; a sessão expira 1 minuto após o login                         |
+| `favorite-error`   | Fixtures completas; incluir ou remover favoritos responde 503                     |
+| `wallet-error`     | Fixtures completas; o primeiro cadastro ou edição de carteira responde 503        |
+| `order-refused`    | Carrinho pronto; o pagamento é recusado 2,5 s depois de criar o pedido            |
+| `order-timeout`    | Carrinho pronto; o pedido é criado, mas a primeira resposta não chega (timeout)   |
+| `order-pending`    | Carrinho pronto; o pedido fica pendente até ser decidido em `/simulacao`          |
+| `order-disconnect` | Carrinho pronto; o Socket.IO cai com o pedido pendente e volta 5 s depois         |
 
 | Latência       | Comportamento                                                                |
 | -------------- | ---------------------------------------------------------------------------- |
@@ -135,7 +139,7 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 - **Conflito de cadastro**: crie uma conta com `nova@colecionador.test` ou com o usuário `novasato`; o erro aparece no próprio campo.
 - **Login social e recuperação de senha**: os botões avisam que não estão disponíveis, sem simular sucesso.
 
-Os cenários específicos dos demais fluxos (cupom expirado, pagamento recusado etc.) entram junto com as telas correspondentes.
+- **Pedido (compra completa, recusa, timeout, queda):** entre como Nova num dos cenários `order-*` (ou `checkout`, que confirma sozinho), abra `/pagamento`, conecte a MetaMask e clique em "Confirmar compra". O resultado abre em `/pagamento?pedido=<id>`. Em `order-timeout`, a confirmação aparece depois dos 15 s do timeout, com o mesmo pedido. Em `order-pending`, decida o pedido em `/simulacao` > "Pedidos pendentes" ou recarregue a página para ver que nenhuma outra compra é criada.
 
 ## Estrutura
 
