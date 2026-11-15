@@ -1,19 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageContainer } from '@/components/layout/page-container'
-import { StateMessage } from '@/components/layout/state-message'
+import { CartView } from '@/components/cart/cart-view'
 
-// Rota reservada para os links do layout; a tela entra na etapa própria.
 export const Route = createFileRoute('/_public/carrinho')({
-  staticData: { navSection: 'market', headerDivider: false },
-  component: Page,
+  // O frame mobile tem cabeçalho e resumo próprios, sem a tab bar.
+  staticData: {
+    navSection: 'market',
+    headerDivider: false,
+    mobileTabBar: false,
+  },
+  component: CartView,
 })
-
-function Page() {
-  return (
-    <PageContainer className="pt-8 md:pt-12">
-      <StateMessage title="Carrinho de NFTs" headingLevel={1}>
-        <p>Esta tela ainda está em construção.</p>
-      </StateMessage>
-    </PageContainer>
-  )
-}
