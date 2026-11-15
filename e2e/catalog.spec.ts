@@ -140,6 +140,13 @@ test.describe('catálogo da Início', () => {
       'page',
     )
     await expect(grid(page).getByRole('listitem')).not.toHaveCount(0)
+
+    // O sublinhado da aba ativa não pode virar um scroll vertical nas abas.
+    const tabs = page.getByRole('navigation', { name: 'Recortes do catálogo' })
+    const overflow = await tabs.evaluate(
+      (el) => el.scrollHeight - el.clientHeight,
+    )
+    expect(overflow).toBe(0)
   })
 
   test('faixa de preço aplicada vai para a URL e para a API', async ({
