@@ -47,6 +47,7 @@ export type ScenarioId =
   | 'server-error'
   | 'flaky'
   | 'short-session'
+  | 'favorite-error'
 
 export interface ScenarioSummary {
   id: ScenarioId

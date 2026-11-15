@@ -201,3 +201,17 @@ export function listNfts(
     },
   }
 }
+
+const RELATED_LIMIT = 5
+
+/** "Mais desta coleção": os mais recentes da mesma coleção, sem o próprio NFT. */
+export function relatedNfts(nfts: Array<Nft>, id: string): Array<Nft> {
+  const source = nfts.find((nft) => nft.id === id)
+  if (!source) return []
+  return nfts
+    .filter(
+      (nft) => nft.id !== id && nft.collection.id === source.collection.id,
+    )
+    .sort((a, b) => SORTERS.recent(a, b) || a.id.localeCompare(b.id))
+    .slice(0, RELATED_LIMIT)
+}

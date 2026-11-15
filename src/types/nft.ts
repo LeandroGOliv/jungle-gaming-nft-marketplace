@@ -52,6 +52,8 @@ export interface Nft {
   /** Exibido como "ID do token: #0042". */
   tokenId: string
   name: string
+  /** Uma frase, para "Sobre este NFT" no detalhe. */
+  summary: string
   description: string
   collection: NftCollection
   category: NftCategory
@@ -118,4 +120,9 @@ export interface NftListResponse {
   total: number
   totalPages: number
   facets: NftListFacets
+}
+
+/** `GET /nfts/:id/related`: "Mais desta coleção" no detalhe. */
+export interface NftRelatedResponse {
+  items: Array<Nft>
 }

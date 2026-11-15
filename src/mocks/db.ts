@@ -8,7 +8,7 @@ import type { RealtimeResourceType } from '@/types/realtime'
 import type { Wallet } from '@/types/user'
 
 /** Mudar o formato do estado exige subir este número: o salvo antigo é descartado. */
-export const DB_SCHEMA_VERSION = 1
+export const DB_SCHEMA_VERSION = 2
 
 export interface SessionRecord {
   token: string

@@ -156,6 +156,14 @@ function gallery(artwork: Artwork, name: string) {
 const FIGMA_DESCRIPTION =
   'Emerald Ape #042 é uma obra digital 1/50 finalizada à mão da coleção Kurio Editions. Cada atributo fica armazenado nos metadados do token e verificado na Ethereum. A obra explora identidade, movimento e luz em um mundo digital sem fronteiras.\n\nA propriedade inclui a arte em alta resolução, lançamentos exclusivos para colecionadores e um registro permanente de procedência registrada na rede. Nova Sato recebe 5% de direitos autorais nas vendas secundárias, apoiando novos trabalhos e lançamentos da comunidade.'
 
+const FIGMA_SUMMARY =
+  'Um colecionável digital finalizado à mão da coleção Kurio Editions, verificado na Ethereum, com arte desbloqueável e acesso para colecionadores.'
+
+function summarize(collection: CollectionSpec) {
+  const network = collection.network === 'polygon' ? 'Polygon' : 'Ethereum'
+  return `Um colecionável digital finalizado à mão da coleção ${collection.name}, verificado na ${network}, com arte desbloqueável e acesso para colecionadores.`
+}
+
 function describe(
   title: string,
   collection: CollectionSpec,
@@ -192,6 +200,7 @@ function buildNft(spec: NftSpec, index: number): Nft {
     id: `${name.toLowerCase().replace(/\s+/g, '-')}-${token}`,
     tokenId: `#${token.padStart(4, '0')}`,
     name: title,
+    summary: index === 0 ? FIGMA_SUMMARY : summarize(collection),
     description:
       index === 0
         ? FIGMA_DESCRIPTION
