@@ -1,4 +1,4 @@
-import { HttpResponse, http } from 'msw'
+import { HttpResponse, delay, http } from 'msw'
 import {
   orderRequestFingerprint,
   parseConnectionRequest,
@@ -20,9 +20,8 @@ const toConnection = ({
 }: WalletConnectionRecord): WalletConnection => ({ ...connection })
 
 /**
- * Conexão simulada de carteira e criação do pedido. O ciclo de vida do pedido
- * (confirmação, recusa, `order.updated`) fica com a etapa de pedidos; aqui o
- * pedido nasce `pending`.
+ * Conexão simulada de carteira e pedidos. O pedido nasce `pending`; o runtime
+ * agenda o desfecho do cenário, que sai como `order.updated` ao dono.
  */
 export function createCheckoutHandlers(apiUrl: string, runtime: MockRuntime) {
   const { store } = runtime
@@ -197,9 +196,40 @@ export function createCheckoutHandlers(apiUrl: string, runtime: MockRuntime) {
         db.orders.push(attempt.order)
         db.orderRequests[attempt.order.id] = orderRequestFingerprint(body)
       })
+      runtime.scheduleSettlement(attempt.order)
+
+      if (
+        runtime.checkoutScenario()?.order?.timeoutAfterCreate &&
+        !store.state.checkoutTriggers.includes('order-timeout')
+      ) {
+        store.write((db) => {
+          db.checkoutTriggers.push('order-timeout')
+        })
+        // O pedido existe, mas a resposta se perde: vale o timeout do cliente.
+        await delay('infinite')
+      }
       return HttpResponse.json<Order>(structuredClone(attempt.order), {
         status: 201,
       })
     }),
+
+    http.get<{ orderId: string }>(
+      `${apiUrl}/orders/:orderId`,
+      ({ request, params }) => {
+        const lookup = authenticate(request)
+        if (!lookup.ok) return apiErrorResponse(401, { reason: lookup.reason })
+        // Pedido de outro usuário responde como inexistente: nem a existência vaza.
+        const order = store.state.orders.find(
+          (o) => o.id === params.orderId && o.userId === lookup.user.id,
+        )
+        if (!order) {
+          return apiErrorResponse(404, {
+            reason: 'ORDER_NOT_FOUND',
+            message: 'Pedido não encontrado.',
+          })
+        }
+        return HttpResponse.json<Order>(structuredClone(order))
+      },
+    ),
   ]
 }

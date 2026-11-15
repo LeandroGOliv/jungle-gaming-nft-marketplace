@@ -1,3 +1,4 @@
+import { formatEth } from '@/utils/eth'
 import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -5,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useExpireSessions,
+  useSettleOrder,
   useHealthCheck,
   useResetSimulation,
   useSimulation,
@@ -88,12 +90,14 @@ function SimulationControls({ state }: { state: SimulationState }) {
   const reset = useResetSimulation()
   const update = useUpdateSimulation()
   const expire = useExpireSessions()
+  const settle = useSettleOrder()
   const [scenario, setScenario] = useState<ScenarioId>(state.scenarioId)
   const activeScenario = state.scenarios.find((s) => s.id === state.scenarioId)
   const activeLatency = state.latencyPresets.find((p) =>
     sameProfile(p.profile, state.latency),
   )
-  const feedbackError = reset.error ?? update.error ?? expire.error
+  const feedbackError =
+    reset.error ?? update.error ?? expire.error ?? settle.error
 
   return (
     <>
@@ -234,16 +238,71 @@ function SimulationControls({ state }: { state: SimulationState }) {
         </Button>
       </section>
 
+      <section
+        aria-labelledby="simulation-orders"
+        className="flex flex-col items-start gap-4 rounded-lg border border-border bg-card p-6"
+      >
+        <h2 id="simulation-orders" className="text-lg font-medium">
+          Pedidos pendentes
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Fora do cenário “Pedido fica pendente”, o pagamento é decidido sozinho
+          segundos depois da criação. Decidir aqui emite order.updated ao dono
+          do pedido.
+        </p>
+        {state.pendingOrders.length === 0 ? (
+          <p className="text-sm">Nenhum pedido aguardando pagamento.</p>
+        ) : (
+          <ul className="flex w-full flex-col gap-3">
+            {state.pendingOrders.map((order) => (
+              <li
+                key={order.id}
+                className="flex flex-wrap items-center justify-between gap-3"
+              >
+                <span className="text-sm">
+                  {order.id} · {order.userId} · {formatEth(order.totalEth)}
+                </span>
+                <span className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={settle.isPending}
+                    onClick={() =>
+                      settle.mutate({ orderId: order.id, outcome: 'confirmed' })
+                    }
+                    aria-label={`Confirmar o pagamento do pedido ${order.id}`}
+                  >
+                    Confirmar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settle.isPending}
+                    onClick={() =>
+                      settle.mutate({ orderId: order.id, outcome: 'refused' })
+                    }
+                    aria-label={`Recusar o pagamento do pedido ${order.id}`}
+                  >
+                    Recusar
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <HealthProbe />
 
       <p role="status" aria-live="polite" className="text-sm">
         {feedbackError
           ? describeRequestError(feedbackError)
-          : expire.isSuccess
-            ? 'Sessões expiradas.'
-            : reset.isSuccess
-              ? 'Dados restaurados.'
-              : ''}
+          : settle.isSuccess
+            ? `Pedido ${settle.variables.orderId} ${settle.variables.outcome === 'confirmed' ? 'confirmado' : 'recusado'}.`
+            : expire.isSuccess
+              ? 'Sessões expiradas.'
+              : reset.isSuccess
+                ? 'Dados restaurados.'
+                : ''}
       </p>
     </>
   )

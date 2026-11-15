@@ -55,6 +55,10 @@ export type ScenarioId =
   | 'checkout-coupon-expired'
   | 'wallet-refused'
   | 'wallet-disconnect'
+  | 'order-refused'
+  | 'order-timeout'
+  | 'order-pending'
+  | 'order-disconnect'
 
 export interface ScenarioSummary {
   id: ScenarioId
@@ -88,7 +92,18 @@ export interface SimulationState extends SimulationSettings {
   realtimeUsers: Array<string | null>
   /** Validade das sessões criadas no cenário atual. */
   sessionTtlMs: number
+  /** Pedidos aguardando o desfecho do pagamento. */
+  pendingOrders: Array<PendingOrderSummary>
 }
+
+export interface PendingOrderSummary {
+  id: string
+  userId: string
+  totalEth: string
+  createdAt: string
+}
+
+export type OrderOutcome = 'confirmed' | 'refused'
 
 /** Corpo de `PATCH /__simulation`: só os campos enviados mudam, sem reset. */
 export interface SimulationUpdate {
@@ -137,6 +152,8 @@ export interface MockControlApi {
   expireSessions: () => void
   /** Encerra as conexões de carteira abertas e emite `wallet.disconnected` ao dono. */
   disconnectWallets: () => void
+  /** Decide um pedido pendente: o store muda e `order.updated` vai ao dono. */
+  settleOrder: (id: string, outcome: OrderOutcome) => void
 }
 
 declare global {
