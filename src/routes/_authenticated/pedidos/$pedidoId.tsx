@@ -1,19 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { PageContainer } from '@/components/layout/page-container'
-import { StateMessage } from '@/components/layout/state-message'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-// Rota reservada e já protegida pela sessão; o recibo entra na etapa própria.
+// O recibo é o modal sobre o pagamento (como no Figma); o endereço antigo leva a ele.
 export const Route = createFileRoute('/_authenticated/pedidos/$pedidoId')({
-  staticData: { navSection: 'market' },
-  component: Page,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: '/pagamento',
+      search: { pedido: params.pedidoId },
+      replace: true,
+    })
+  },
 })
-
-function Page() {
-  return (
-    <PageContainer className="pt-8 md:pt-12">
-      <StateMessage title="Confirmação de pedido" headingLevel={1}>
-        <p>Esta tela ainda está em construção.</p>
-      </StateMessage>
-    </PageContainer>
-  )
-}

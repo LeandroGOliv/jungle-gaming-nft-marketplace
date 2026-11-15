@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,7 +16,8 @@ import {
   useCartQuote,
   useRevalidateCart,
 } from '@/hooks/use-cart'
-import { useCreateOrder, useWalletConnection } from '@/hooks/use-checkout'
+import { useWalletConnection } from '@/hooks/use-checkout'
+import { useCreateOrder, usePendingOrderAttempt } from '@/hooks/use-order'
 import { useSession } from '@/hooks/use-session'
 import { useWallets } from '@/hooks/use-wallets'
 import { checkoutDraft } from '@/lib/checkout-draft'
@@ -30,6 +31,7 @@ import { cn } from '@/lib/utils'
 import { checkoutSchema } from '@/schemas/checkout'
 import { CheckoutSkeleton } from './checkout-skeleton'
 import { CollectorFields } from './collector-fields'
+import { OrderConfirmationDialog } from './order-confirmation-dialog'
 import { OrderItems, OrderTotals, OrderTotalsSkeleton } from './order-review'
 import { ProviderOptions } from './provider-options'
 import { QuoteChangesAlert } from './quote-changes-alert'
@@ -109,6 +111,8 @@ function connectionTarget(
 
 /** Pagamento: carrega carrinho, cotação e carteiras e decide o estado da tela. */
 export function CheckoutView() {
+  const { pedido } = useSearch({ from: '/_authenticated/pagamento' })
+  const navigate = useNavigate()
   const session = useSession()
   const cart = useCart()
   const quote = useCartQuote(cart.data, cart.owner)
@@ -160,8 +164,38 @@ export function CheckoutView() {
       <MobileHeader />
       <Breadcrumb />
       {content}
+      <OrderConfirmationDialog
+        orderId={pedido}
+        onClose={() =>
+          void navigate({
+            to: '/pagamento',
+            search: (prev) => ({ ...prev, pedido: undefined }),
+            replace: true,
+          })
+        }
+      />
+      {pedido === undefined && <ResumeOrderAttempt />}
     </PageContainer>
   )
+}
+
+/**
+ * Um envio ficou sem resposta antes do refresh (ou da queda): repete-se com a
+ * mesma chave. Se o pedido existe, a API devolve o mesmo e o resultado abre;
+ * se não chegou a ser criado, nada acontece além de liberar a tentativa.
+ */
+function ResumeOrderAttempt() {
+  const pending = usePendingOrderAttempt()
+  const createOrder = useCreateOrder()
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!pending || started.current) return
+    started.current = true
+    createOrder.mutate(pending)
+  }, [pending, createOrder])
+
+  return null
 }
 
 interface CheckoutFormProps {
@@ -180,7 +214,6 @@ function CheckoutForm({
   wallets,
 }: CheckoutFormProps) {
   const announce = useAnnounce()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const cartKey = useCartKey()
   const revalidate = useRevalidateCart()
@@ -386,16 +419,7 @@ function CheckoutForm({
           },
         },
         {
-          onSuccess: (order) => {
-            checkoutDraft.clear(user.id)
-            announce(
-              `Pedido ${order.id} criado no valor de ${formatEth(order.totalEth)}. Aguardando a confirmação do pagamento.`,
-            )
-            void navigate({
-              to: '/pedidos/$pedidoId',
-              params: { pedidoId: order.id },
-            })
-          },
+          onSuccess: () => checkoutDraft.clear(user.id),
           onError: (error) => {
             const reason = getApiError(error)?.reason
             if (reason === 'QUOTE_CHANGED' || reason === 'CART_EMPTY') {

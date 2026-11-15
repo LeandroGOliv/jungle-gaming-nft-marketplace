@@ -2,6 +2,7 @@ import { useMatch, useNavigate } from '@tanstack/react-router'
 import { useAnnounce } from '@/hooks/use-announce'
 import { useLogout } from '@/hooks/use-session'
 import { checkoutDraft } from '@/lib/checkout-draft'
+import { orderAttempt } from '@/lib/order-attempt'
 
 /**
  * Logout pela interface: encerra a sessão, avisa na região viva e, se a tela
@@ -24,6 +25,7 @@ export function useSignOut() {
       // (e o callback do `mutate` não roda se a tela privada desmontar antes).
       logout.mutate()
       checkoutDraft.clearAll()
+      orderAttempt.clearAll()
       announce('Você saiu da sua conta.')
       if (inPrivateRoute) void navigate({ to: '/', replace: true })
     },

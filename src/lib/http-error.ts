@@ -14,6 +14,14 @@ export function isUnauthorized(error: unknown) {
   return isAxiosError(error) && error.response?.status === 401
 }
 
+/**
+ * A requisição saiu, mas a resposta não chegou (timeout ou queda): o servidor
+ * pode ter processado. Cancelamento não conta.
+ */
+export function isNoResponse(error: unknown) {
+  return isAxiosError(error) && !error.response && error.code !== 'ERR_CANCELED'
+}
+
 /** Mensagem curta para o usuário, distinguindo timeout e falta de conexão. */
 export function describeRequestError(error: unknown) {
   const apiError = getApiError(error)
