@@ -125,7 +125,7 @@ Login e cadastro não são rotas: abrem como modal sobre a tela atual pelo parâ
 
 `/pedidos/$pedidoId` só redireciona para `/pagamento?pedido=<id>`: o recibo é o modal sobre o pagamento (ver [Pedido e confirmação](#pedido-e-confirmação)).
 
-`/carrinho`, `/perfil`, `/carteiras`, `/pagamento` e `/pedidos/$pedidoId` existem como rotas reservadas ("em construção") para os links e guardas serem tipados desde já; cada tela substitui o componente na sua etapa.
+`/carrinho`, `/perfil`, `/carteiras`, `/pagamento` e `/pedidos/$pedidoId` nasceram como rotas reservadas ("em construção") para os links e guardas serem tipados desde já; cada tela substitui o componente na sua etapa.
 
 ### Opções por rota
 
@@ -546,6 +546,42 @@ Envelope comum (`eventId`, `resource: { type: 'order', id }`, `version`, `emitte
 - **Confirmado:** o recibo do Figma. "Ver no Etherscan" leva a `/em-breve?secao=explorador-de-blocos`, com a nota "Hash e explorador simulados: nenhuma transação real foi feita." O hash curto tem o completo no `title`.
 - **Estados:** skeleton com shimmer nas alturas do recibo, "Pedido não encontrado" para 404 (pedido de outro usuário incluído), erro com "Tentar novamente" e "Atualizando…" durante a reconciliação em segundo plano.
 
+## Perfil do colecionador
+
+### Contratos REST
+
+Todas as rotas usam `clientApi` e exigem sessão (401 sem ela). Os tipos ficam em `src/types/user.ts`. As respostas de sucesso trazem o perfil público (`User`), que nunca inclui hash nem salt da senha.
+
+| Método e caminho         | Corpo                                 | Resposta | Erros                                                                             |
+| ------------------------ | ------------------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `GET /profile`           | —                                     | `User`   | 401                                                                               |
+| `PATCH /profile`         | `UpdateProfileRequest`                | `User`   | 422 com `fieldErrors` (formato, nome de usuário reservado ou já em uso)           |
+| `PUT /profile/avatar`    | `multipart/form-data`, campo `avatar` | `User`   | 422 `fieldErrors.avatar` (ausente, fora de PNG/JPEG/WebP, mais de 2 MB, ilegível) |
+| `DELETE /profile/avatar` | —                                     | `User`   | 401                                                                               |
+| `POST /profile/password` | `ChangePasswordRequest`               | 204      | 422 com `fieldErrors`; `INVALID_CURRENT_PASSWORD` em `currentPassword`            |
+
+`UpdateProfileRequest` tem nome de exibição, nome de usuário, nome ENS (sem `.eth`, aceita subnomes com ponto) e apelido da carteira. O **e-mail fica de fora**: é a credencial de login e o enunciado só pede "edição dos dados"; na tela ele aparece desabilitado.
+
+A API decodifica o avatar e o guarda recortado em 256 × 256 WebP, como data URL no estado persistido (o arquivo original de até 2 MB não caberia no `localStorage`). Um arquivo com tipo certo e conteúdo inválido só é recusado nesse passo, como faria um servidor real. A regra de formato e tamanho é a mesma no cliente e na API (`src/utils/avatar-file.ts`).
+
+Na troca de senha a API confere a senha atual contra o hash, exige a regra do cadastro (8 caracteres, letras e números) e uma senha diferente da atual, e grava só o novo hash com salt novo. A sessão atual continua válida.
+
+No store, `User` ganhou `walletNickname`; o esquema subiu para a versão 6. Falha transitória: `addFault` (ou o painel `/simulacao`) com `PATCH /profile` respondendo 503.
+
+### Cache
+
+O perfil fica em `['user', userId, 'profile']`, sob a chave do usuário, e sai do cache no logout e na troca de conta. Cada resposta confirmada é gravada no perfil **e** na sessão em cache (só se for do mesmo usuário), que alimenta o header: a mudança aparece na hora e, depois do refresh, volta de `GET /auth/session`. Não há atualização otimista.
+
+### Decisões de UX
+
+- **Um "Salvar":** o Figma tem um único botão. Ele envia os dados, depois o avatar (se mudou) e depois a senha (se os campos foram preenchidos). Cada etapa confirmada já vale; se uma falha, o erro aponta o campo dela e as anteriores ficam salvas. Os nomes dos `fieldErrors` não se repetem entre as etapas.
+- **Senha opcional:** os três campos em branco mantêm a senha; preencher qualquer um exige os três. Depois de salvar, os campos de senha são limpos.
+- **Avatar:** "Alterar" abre o seletor; o arquivo é validado na hora e pré-visualizado (object URL liberado ao trocar ou desmontar). A troca só vale no "Salvar". Com um arquivo pendente, "Remover" vira "Descartar".
+- **Validação:** React Hook Form + Zod; os 422 voltam para o campo com foco no primeiro. Falhas de rede ou 5xx aparecem num alerta acima do "Salvar", sem aparentar sucesso.
+- **Feedback:** "Perfil atualizado." (ou "Perfil e senha atualizados.") na região viva; falha anunciada como `assertive`.
+- **Estados:** skeleton com shimmer na geometria do formulário, erro com "Tentar novamente" e `aria-busy` durante a atualização em segundo plano. Um refetch não reinicia o que está sendo digitado.
+- **Mobile:** sem header nem sidebar abaixo de 768 px, o "Sair" da sidebar fica no fim do perfil, aonde a aba "Minha conta" leva.
+
 ## Desvios do Figma
 
 | Item                                      | Desvio                                                                                                                                                                                                                                                                                            | Motivo                                                                                                          |
@@ -614,3 +650,8 @@ Envelope comum (`eventId`, `resource: { type: 'order', id }`, `version`, `emitte
 | Confirmação: imagens dos itens            | Os itens 2 e 3 têm 66 e 65 px no Figma; todos usam 70 px (44 px no mobile).                                                                                                                                                                                                                       | Inconsistência do arquivo                                                                                       |
 | Confirmação: mobile                       | Sem frame. Tela cheia, metadados em grade 2 × 2, tabela com fonte menor e ID do token sem quebra.                                                                                                                                                                                                 | Caber em 390 px                                                                                                 |
 | Confirmação: metadados longos             | Com nome de carteira longo (Coinbase Wallet), o valor quebra linha em vez de ser cortado.                                                                                                                                                                                                         | Sem perda de conteúdo                                                                                           |
+| Perfil: avatar no header                  | O header do Figma não tem acesso ao perfil. Com sessão, um círculo de 35 px com o avatar (ou as iniciais do nome de exibição) aparece antes do "Sair" e leva a `/perfil`.                                                                                                                         | A issue pede que as alterações reflitam no header, e no desktop não havia caminho para o perfil                 |
+| Perfil: e-mail desabilitado               | O Figma desenha o e-mail como campo editável; ele aparece com a mesma caixa, texto `text-secondary` e desabilitado.                                                                                                                                                                               | É a credencial de login e o enunciado não pede sua edição                                                       |
+| Perfil: "Apelido da carteira"             | Campo do Figma sem dado correspondente no usuário; virou `walletNickname` do perfil, salvo com os demais dados.                                                                                                                                                                                   | Fidelidade ao Figma sem depender das carteiras, que são outra tela                                              |
+| Perfil: mobile e tablet                   | Sem frame. Mesmo padrão das carteiras: cabeçalho com "Voltar" abaixo de 1024 px, uma coluna abaixo de 768 px, "Salvar" em largura total e "Sair" no fim da tela no mobile.                                                                                                                        | Coerência com as demais telas da conta                                                                          |
+| Perfil: medidas                           | A cota do MCP do Figma e a API REST estavam esgotadas; as medidas vieram da Plugin API no navegador (`docs/figma/raw/70386-239.txt`), sem screenshot de referência em cache.                                                                                                                      | Limite do plano Starter                                                                                         |
