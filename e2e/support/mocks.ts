@@ -76,6 +76,11 @@ export class Mocks {
     return this.page.evaluate(() => window.__mocks!.expireSessions())
   }
 
+  /** Encerra as conexões de carteira: `wallet.disconnected` sai pelo Socket.IO. */
+  disconnectWallets() {
+    return this.page.evaluate(() => window.__mocks!.disconnectWallets())
+  }
+
   /** Evento cru, para duplicatas e versões antigas. */
   emit(event: RealtimeEventName, payload: unknown) {
     return this.page.evaluate(
