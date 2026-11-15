@@ -102,15 +102,16 @@ Há três formas de controlar a simulação, todas sobre o mesmo estado:
 
 Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial do cenário e descarta as falhas adicionadas. A latência escolhida é preservada no reset.
 
-| Cenário         | O que acontece                                                                    |
-| --------------- | --------------------------------------------------------------------------------- |
-| `default`       | Fixtures completas, rede saudável com latência de 200–400 ms                      |
-| `empty`         | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
-| `offline`       | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
-| `timeout`       | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
-| `server-error`  | Toda chamada à API responde 503                                                   |
-| `flaky`         | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
-| `short-session` | Fixtures completas; a sessão expira 1 minuto após o login                         |
+| Cenário          | O que acontece                                                                    |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `default`        | Fixtures completas, rede saudável com latência de 200–400 ms                      |
+| `empty`          | Nenhum NFT à venda; usuários e carteiras continuam disponíveis                    |
+| `offline`        | Toda chamada à API falha por rede e o Socket.IO recusa conexões                   |
+| `timeout`        | A API nunca responde; vale o timeout de 15 s do cliente HTTP                      |
+| `server-error`   | Toda chamada à API responde 503                                                   |
+| `flaky`          | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
+| `short-session`  | Fixtures completas; a sessão expira 1 minuto após o login                         |
+| `favorite-error` | Fixtures completas; incluir ou remover favoritos responde 503                     |
 
 | Latência       | Comportamento                                                                |
 | -------------- | ---------------------------------------------------------------------------- |
@@ -127,6 +128,7 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 - **Respostas fora de ordem e carregamento lento**: escolha a latência `out-of-order` ou `slow`.
 - **Erro HTTP pontual** (qualquer status 401, 403, 404, 409, 422, 500 ou 503 em um endpoint): pelo console, por exemplo `window.__mocks.addFault({ id: 'fav', method: 'POST', path: '/favorites', effect: { kind: 'http', status: 503 }, times: 1 })`.
 - **Queda do tempo real**: em `/simulacao`, "Derrubar conexões" e depois "Restabelecer conexões".
+- **Falha ao favoritar**: aplique `favorite-error`, entre e clique em "Favoritar" no detalhe de um NFT. O coração muda na hora, volta ao estado anterior quando a API recusa e o erro é anunciado. Volte ao cenário `default` para a mesma ação funcionar.
 - **Sessão expirada durante a navegação**: entre, abra `/simulacao` e use "Expirar sessões" (ou aplique `short-session` e espere 1 minuto). A próxima tela privada, ou a volta à aba, pede login de novo com o aviso de sessão expirada, e depois do login o colecionador volta à tela em que estava.
 - **Conflito de cadastro**: crie uma conta com `nova@colecionador.test` ou com o usuário `novasato`; o erro aparece no próprio campo.
 - **Login social e recuperação de senha**: os botões avisam que não estão disponíveis, sem simular sucesso.
