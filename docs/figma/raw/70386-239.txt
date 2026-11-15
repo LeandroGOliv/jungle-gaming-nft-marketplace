@@ -1,0 +1,36 @@
+// Plugin API dump (browser fallback: MCP quota spent, REST 429) of Profile Form 70386:239.
+// Format: id TYPE name x,y WxH f=fill s=stroke/weight r=radius al=autolayout gap p=T/R/B/L t="text" font size lh
+// Asset: Iconly/Curved/Image 2 (9:1560) -> public/icons/profile-avatar-image.svg
+70386:239 FRAME Profile Form 338,0 862x726 al=VERTICAL gap32 p0/0/0/0
+ 9:1569 TEXT Perfil do colecionador 0,0 212x16 f=#f5f1eb Roboto Mono Bold 16 lh16
+ 70386:240 FRAME Fields 0,48 862x285 al=VERTICAL gap24
+  70386:241 FRAME Field Row 1 0,0 862x79 al=HORIZONTAL gap0 (fields at x=0 and x=445, each 417 wide)
+   70386:242 Display Name Field 417x79 al=VERTICAL gap10
+    70304:398 label row 159x29 al=HORIZONTAL gap0
+     9:1508 TEXT "Nome de exibição" 0,7 f=#f5f1eb Roboto Mono Regular 15 lh15
+     9:1516 TEXT "*" f=#f0805f Roboto Mono Regular 22 lh29
+    9:1509 RECTANGLE input 417x40 s=#3f2319/1 r=3
+   70386:243 Username Field 445,0 417x79 — "Nome de usuário" + "*" (same styles), input 417x40 s=#3f2319/1 r=3
+  70386:245 FRAME Field Row 2 0,103
+   70386:246 "Bio Field": label "E-mail" + "*", input 417x40 s=#3f2319/1 r=3
+   70386:247 ENS Field 445,0: label row gap4 "Nome ENS" + "*"
+    70386:249 ENS Input 417x40 (no autolayout)
+     9:1587 RECTANGLE 0,0 78x40 s=#3f2319/1 r=3
+     9:1588 TEXT ".eth" 10,13 f=#f5f1eb Roboto Mono Regular 15 lh15
+     9:1589 Arrow-Down 53,10 20x20 (vector 11x6 f=#f5f1eb)
+     9:1522 RECTANGLE 88,0 329x40 s=#3f2319/1 r=3
+  70386:250 FRAME Field Row 3 0,206
+   70386:251 "Website Field": label "Apelido da carteira" + "*", input 417x40 s=#3f2319/1 r=3
+   70386:252 Avatar Field 445,0 417x75 al=VERTICAL gap10
+    9:1536 TEXT "Avatar" f=#f5f1eb Roboto Mono Regular 15 lh15 (no asterisk)
+    70386:254 Avatar Controls 251x50 al=HORIZONTAL gap24
+     9:1581 FRAME 50x50 f=#2f1d15 s=#3f2319/1 r=25 p12 — icon 9:1560 24x24
+     9:1582 FRAME 177x40 al=HORIZONTAL gap20 (y=5, centered)
+      9:1540 button 98x40 f=#d28a4c r=3, TEXT "Alterar" f=#140d0a Roboto Mono Bold 14 lh16
+      9:1548 TEXT "Remover" f=#f5f1eb Roboto Mono Regular 14 lh16 (text button)
+ 70386:255 FRAME Change Password 0,365 862x289 al=VERTICAL gap24
+  9:1586 TEXT "Alterar senha" f=#f5f1eb Roboto Mono Medium 16 lh16
+  70386:256 Current Password Field 417x67 al=VERTICAL gap12: "Senha atual" Regular 15 lh15; Password Input instance 70522:3144 417x40 s=#3f2319/1 r=3 al=HORIZONTAL gap10 p0/16/0/16
+  70386:258 New Password Field: "Nova senha"; Password Input 70522:3158 (same)
+  70386:260 Confirm Password Field: "Confirmar nova senha"; Password Input 70522:3172 (same)
+ 70386:262 FRAME Save Button 0,686 131x40 f=#d28a4c r=3 — TEXT "Salvar" f=#140d0a Roboto Mono Bold 14 lh16 (centered)

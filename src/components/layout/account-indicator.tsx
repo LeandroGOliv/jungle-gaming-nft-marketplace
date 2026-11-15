@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/hooks/use-session'
 import { useSignOut } from '@/hooks/use-sign-out'
+import type { User } from '@/types/user'
 
 // Botão do header no Figma: 100 × 35, primário, ícone Iconly à esquerda.
 const BUTTON_CLASS =
@@ -16,7 +17,40 @@ export function AccountIndicator() {
     return <Skeleton className="h-[35px] w-[100px] rounded-md" />
   }
   if (session.status === 'anonymous') return <SignInButton />
-  return <SignOutButton displayName={session.user.displayName} />
+  return (
+    <div className="flex items-center gap-4">
+      <ProfileLink user={session.user} />
+      <SignOutButton displayName={session.user.displayName} />
+    </div>
+  )
+}
+
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/)
+  return (
+    parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')
+  ).toUpperCase()
+}
+
+/**
+ * Fora do Figma (desvio registrado): o header não desenha acesso ao perfil.
+ * O avatar (ou as iniciais) leva ao perfil e mostra na hora o que foi salvo.
+ */
+function ProfileLink({ user }: { user: User }) {
+  return (
+    <Link
+      to="/perfil"
+      title={user.displayName}
+      className="focus-ring grid size-[35px] shrink-0 place-items-center overflow-hidden rounded-full border border-border bg-[#2f1d15] text-[13px] leading-none font-bold text-text-accent"
+    >
+      {user.avatarUrl ? (
+        <img src={user.avatarUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <span aria-hidden="true">{initialsOf(user.displayName)}</span>
+      )}
+      <span className="sr-only">Perfil de {user.displayName}</span>
+    </Link>
+  )
 }
 
 function ButtonIcon() {
