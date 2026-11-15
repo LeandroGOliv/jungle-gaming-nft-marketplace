@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAnnounce } from '@/hooks/use-announce'
-import { useSession, userKeys } from '@/hooks/use-session'
+import {
+  isCurrentSession,
+  ownerQueryFn,
+  ownerToken,
+  useSessionOwner,
+  userKeys,
+} from '@/hooks/use-session'
 import { createWallet, listWallets, updateWallet } from '@/services/wallets'
 import type { WalletInput, WalletSlot, WalletsResponse } from '@/types/wallet'
 
@@ -11,12 +17,12 @@ export const walletKeys = {
 
 /** Carteiras do usuário autenticado (a rota já exige sessão). */
 export function useWallets() {
-  const session = useSession()
-  const userId = session.status === 'authenticated' ? session.user.id : null
+  const owner = useSessionOwner()
+  const userId = owner?.userId ?? null
   const query = useQuery({
     queryKey: walletKeys.list(userId ?? 'anonymous'),
-    queryFn: ({ signal }) => listWallets(signal),
-    enabled: userId !== null,
+    queryFn: ownerQueryFn(owner, listWallets),
+    enabled: owner !== null,
   })
   return { ...query, userId }
 }
@@ -35,16 +41,19 @@ interface SaveWalletVariables {
 export function useSaveWallet(userId: string) {
   const queryClient = useQueryClient()
   const announce = useAnnounce()
+  const owner = useSessionOwner()
   const queryKey = walletKeys.list(userId)
 
   return useMutation({
     mutationKey: [...queryKey, 'save'],
     mutationFn: ({ slot, walletId, input }: SaveWalletVariables) =>
       walletId
-        ? updateWallet(walletId, input)
-        : createWallet({ ...input, slot }),
+        ? updateWallet(ownerToken(owner, userId), walletId, input)
+        : createWallet(ownerToken(owner, userId), { ...input, slot }),
     onSuccess: (data, { slot, walletId }) => {
-      queryClient.setQueryData<WalletsResponse>(queryKey, data)
+      if (isCurrentSession(owner?.token)) {
+        queryClient.setQueryData<WalletsResponse>(queryKey, data)
+      }
       announce(
         `Carteira ${slot === 'primary' ? 'principal' : 'secundária'} ${walletId ? 'atualizada' : 'cadastrada'}.`,
       )

@@ -17,3 +17,24 @@ export function safeRedirect(
   if (url.origin !== new URL(origin).origin) return undefined
   return url.pathname + url.search + url.hash
 }
+
+interface ReturnAfterLoginInput {
+  /** Tela onde o login foi pedido. */
+  redirect: string
+  /** Quem estava nela quando a sessão terminou; `null` se era um visitante. */
+  previousUserId: string | null
+  /** Quem acabou de entrar. */
+  userId: string
+}
+
+/**
+ * Destino após o login. A tela de outro usuário (o pedido, o perfil) não é
+ * de quem entrou agora: nesse caso, a Início.
+ */
+export function returnAfterLogin({
+  redirect,
+  previousUserId,
+  userId,
+}: ReturnAfterLoginInput) {
+  return previousUserId === null || previousUserId === userId ? redirect : '/'
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useAnnounce } from '@/hooks/use-announce'
 import { useRealtimeSocket } from '@/hooks/use-realtime'
+import { useSessionOwner } from '@/hooks/use-session'
 import {
   describeRequestError,
   getApiError,
@@ -22,7 +23,12 @@ import { createEventGate, isWalletDisconnectedEvent } from '@/utils/realtime'
 export type ConnectionState =
   | { status: 'idle' }
   | { status: 'connecting'; request: CreateWalletConnectionRequest }
-  | { status: 'connected'; connection: WalletConnection }
+  | {
+      status: 'connected'
+      connection: WalletConnection
+      /** Sessão que abriu a conexão: só ela a consulta e a encerra. */
+      token: string
+    }
   | {
       status: 'refused' | 'disconnected' | 'error'
       provider: WalletProvider
@@ -46,24 +52,35 @@ const sameTarget = (
 export function useWalletConnection() {
   const announce = useAnnounce()
   const socket = useRealtimeSocket()
+  const token = useSessionOwner()?.token ?? null
   const [state, setState] = useState<ConnectionState>({ status: 'idle' })
   // Só a resposta do pedido de conexão mais recente vale.
   const attempt = useRef(0)
-  const connectionId = state.status === 'connected' ? state.connection.id : null
+  const connected = state.status === 'connected' ? state : null
+  const connectionId = connected?.connection.id ?? null
+  const connectionToken = connected?.token ?? null
 
-  const mutation = useMutation({ mutationFn: connectWallet })
+  const mutation = useMutation({
+    mutationFn: (request: CreateWalletConnectionRequest) => {
+      if (!token) throw new Error('Sessão encerrada.')
+      return connectWallet(token, request).then((connection) => ({
+        connection,
+        token,
+      }))
+    },
+  })
 
   const connect = useCallback(
     (request: CreateWalletConnectionRequest) => {
       const id = ++attempt.current
       setState({ status: 'connecting', request })
       mutation.mutate(request, {
-        onSuccess: (connection) => {
+        onSuccess: ({ connection, token: owner }) => {
           if (id !== attempt.current) {
-            void disconnectWallet(connection.id).catch(() => {})
+            void disconnectWallet(owner, connection.id).catch(() => {})
             return
           }
-          setState({ status: 'connected', connection })
+          setState({ status: 'connected', connection, token: owner })
           announce('Carteira conectada.')
         },
         onError: (error) => {
@@ -89,7 +106,9 @@ export function useWalletConnection() {
     attempt.current += 1
     setState((current) => {
       if (current.status === 'connected') {
-        void disconnectWallet(current.connection.id).catch(() => {})
+        void disconnectWallet(current.token, current.connection.id).catch(
+          () => {},
+        )
       }
       return { status: 'idle' }
     })
@@ -115,7 +134,7 @@ export function useWalletConnection() {
   // A desconexão chega pelo socket da sessão; após reconectar, a REST confirma
   // se a conexão sobreviveu à queda (o evento pode ter se perdido).
   useEffect(() => {
-    if (!socket || !connectionId) return
+    if (!socket || !connectionId || !connectionToken) return
     const gate = createEventGate()
     const controller = new AbortController()
 
@@ -128,7 +147,11 @@ export function useWalletConnection() {
 
     function onReconnect() {
       gate.reset()
-      getWalletConnection(connectionId!, controller.signal).then(
+      getWalletConnection(
+        connectionToken!,
+        connectionId!,
+        controller.signal,
+      ).then(
         (connection) => {
           if (connection.status !== 'connected') {
             markDisconnected('A carteira foi desconectada.')
@@ -149,7 +172,7 @@ export function useWalletConnection() {
       socket.off('wallet.disconnected', onDisconnected)
       socket.io.off('reconnect', onReconnect)
     }
-  }, [socket, connectionId, markDisconnected])
+  }, [socket, connectionId, connectionToken, markDisconnected])
 
   // A conexão é da tela: sair do pagamento a encerra.
   const latest = useRef(state)
@@ -160,7 +183,9 @@ export function useWalletConnection() {
     () => () => {
       const current = latest.current
       if (current.status === 'connected') {
-        void disconnectWallet(current.connection.id).catch(() => {})
+        void disconnectWallet(current.token, current.connection.id).catch(
+          () => {},
+        )
       }
     },
     [],

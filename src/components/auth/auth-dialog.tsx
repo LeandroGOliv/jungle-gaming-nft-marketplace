@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Link,
   Navigate,
@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/dialog'
 import { useAnnounce } from '@/hooks/use-announce'
 import { useSession } from '@/hooks/use-session'
+import { redirectOwner } from '@/lib/redirect-owner'
 import { cn } from '@/lib/utils'
 import { withoutAuthParams } from '@/utils/auth-location'
+import { returnAfterLogin } from '@/utils/redirect'
 import { LoginForm } from './login-form'
 import { SignUpForm } from './sign-up-form'
 import { SocialSignIn } from './social-sign-in'
@@ -62,9 +64,12 @@ export function AuthDialog() {
   const navigate = useNavigate()
 
   if (auth && session.status === 'authenticated') {
-    // `href` prevalece sobre `to`, que o componente exige nos tipos.
     return (
-      <Navigate to="." href={redirect ?? withoutAuthParams(href)} replace />
+      <ReturnAfterLogin
+        redirect={redirect}
+        fallback={withoutAuthParams(href)}
+        userId={session.user.id}
+      />
     )
   }
 
@@ -90,6 +95,36 @@ export function AuthDialog() {
       {auth && <AuthDialogContent mode={auth} motivo={motivo} />}
     </Dialog>
   )
+}
+
+interface ReturnAfterLoginProps {
+  redirect: string | undefined
+  /** Sem `redirect`: a própria tela, sem os parâmetros do modal. */
+  fallback: string
+  userId: string
+}
+
+/**
+ * Sai do modal para o destino. Decidido uma vez, ao montar: o dono registrado
+ * do retorno é consumido em seguida e não pode mudar a decisão num re-render.
+ */
+function ReturnAfterLogin({
+  redirect,
+  fallback,
+  userId,
+}: ReturnAfterLoginProps) {
+  const [href] = useState(() =>
+    redirect
+      ? returnAfterLogin({
+          redirect,
+          previousUserId: redirectOwner.ownerOf(redirect),
+          userId,
+        })
+      : fallback,
+  )
+  useEffect(() => redirectOwner.clear(), [])
+  // `href` prevalece sobre `to`, que o componente exige nos tipos.
+  return <Navigate to="." href={href} replace />
 }
 
 interface AuthDialogContentProps {

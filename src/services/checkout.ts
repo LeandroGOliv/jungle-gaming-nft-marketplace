@@ -1,4 +1,4 @@
-import { clientApi } from '@/lib/http'
+import { clientApi, withSession } from '@/lib/http'
 import type {
   CreateWalletConnectionRequest,
   WalletConnection,
@@ -7,21 +7,30 @@ import type {
 const connectionPath = (id: string) =>
   `/wallet-connections/${encodeURIComponent(id)}`
 
-export async function connectWallet(request: CreateWalletConnectionRequest) {
+export async function connectWallet(
+  token: string,
+  request: CreateWalletConnectionRequest,
+) {
   const { data } = await clientApi.post<WalletConnection>(
     '/wallet-connections',
     request,
+    withSession(token),
   )
   return data
 }
 
-export async function getWalletConnection(id: string, signal?: AbortSignal) {
+export async function getWalletConnection(
+  token: string,
+  id: string,
+  signal?: AbortSignal,
+) {
   const { data } = await clientApi.get<WalletConnection>(connectionPath(id), {
+    ...withSession(token),
     signal,
   })
   return data
 }
 
-export async function disconnectWallet(id: string) {
-  await clientApi.delete(connectionPath(id))
+export async function disconnectWallet(token: string, id: string) {
+  await clientApi.delete(connectionPath(id), withSession(token))
 }
