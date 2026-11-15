@@ -34,3 +34,21 @@ language.
 "—" in Spec/Screenshot means not fetched yet. When a frame is fetched, save
 `<screen>-<viewport>.md` and `screenshots/<screen>-<viewport>.png` and link
 them here.
+
+## Assets
+
+The file has only **4 unique NFT artworks**; every artwork layer (`NFT Artwork NN`,
+`NFT Collection Artwork NN`, `NFT Cart Artwork N`, `Mobile NFT Artwork N`, promo
+cards) reuses one of them. Fetched with `download_assets` on Products
+`70342:2831`, Detalhes do NFT `10:244` and Promos `70353:241` — no need to
+fetch other sections for artwork.
+
+Source PNGs are 1254 × 1254 (~2 MB). With the user's approval they were
+converted to WebP (quality 0.82) at 400 and 800 px:
+
+| File (`public/images/`)              | Subject                                              |
+| ------------------------------------ | ---------------------------------------------------- |
+| `nft-artwork-emerald-{400,800}.webp` | Green varsity jacket, round sunglasses (Emerald Ape) |
+| `nft-artwork-violet-{400,800}.webp`  | Purple hoodie, bucket hat (Violet Nomad)             |
+| `nft-artwork-ivory-{400,800}.webp`   | Cream blazer, green turtleneck (Ivory Baron)         |
+| `nft-artwork-golden-{400,800}.webp`  | Golden fur, green headphones (Golden Beat)           |
