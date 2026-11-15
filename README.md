@@ -92,6 +92,8 @@ As senhas não ficam salvas em claro: os mocks guardam só o hash SHA-256 com sa
 
 Para entrar, use "Entrar" no header (desktop) ou "Minha conta" na tab bar (mobile), ou abra qualquer tela com `?auth=entrar` (`?auth=cadastro` para criar uma conta). O login abre como modal sobre a tela atual; ao acessar uma tela privada (`/perfil`, `/carteiras`, `/pagamento`, `/pedidos/<id>`) sem sessão, ele abre sobre a Início e, depois de entrar, volta ao destino. No cadastro, `admin`, `kurio`, `suporte` e `root` são nomes de usuário reservados pela API, para exercitar um erro de validação vindo do servidor.
 
+No perfil (`/perfil`), os mesmos nomes reservados valem para o nome de usuário, e a troca de senha recusa a senha atual incorreta com erro no campo. O avatar aceita PNG, JPEG ou WebP de até 2 MB.
+
 ### Seleção e reset de cenários
 
 Há três formas de controlar a simulação, todas sobre o mesmo estado:
@@ -170,3 +172,7 @@ Publicado na Vercel a partir da `main`. O arquivo `vercel.json` redireciona toda
 ## Documentação de arquitetura
 
 A política de sessão e os contratos de autenticação estão em [`ARCHITECTURE.md`](ARCHITECTURE.md#sessão-e-autenticação). Os demais contratos REST e de eventos, o estado do carrinho, a estratégia de cache e a reconciliação entre REST e Socket.IO entram no mesmo arquivo conforme os fluxos forem entregues.
+
+## Desvio do Figma: avatar no header
+
+O header do Figma não tem acesso ao perfil. Com sessão, o header mostra um círculo com o avatar do colecionador (ou as iniciais do nome de exibição) antes do "Sair", que leva a `/perfil` e reflete na hora os dados salvos. Os demais desvios estão em [`ARCHITECTURE.md`](ARCHITECTURE.md#desvios-do-figma).

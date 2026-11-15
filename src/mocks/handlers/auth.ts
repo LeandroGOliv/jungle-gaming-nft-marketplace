@@ -3,6 +3,13 @@ import { emptyCart } from '../cart'
 import { apiErrorResponse } from '../errors'
 import { createSalt, hashPassword, verifyPassword } from '../password'
 import {
+  PASSWORD_RULE_MESSAGE,
+  RESERVED_USERNAMES,
+  USERNAME,
+  USERNAME_FORMAT_MESSAGE,
+  isStrongPassword,
+} from '../profile'
+import {
   createToken,
   lookupSession,
   readBearerToken,
@@ -18,9 +25,6 @@ import type {
 } from '@/types/auth'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const USERNAME = /^[a-z0-9._]{3,20}$/
-// Regra só do servidor, para o cliente exibir um erro de validação vindo da API.
-const RESERVED_USERNAMES = new Set(['admin', 'kurio', 'suporte', 'root'])
 
 function asText(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
@@ -36,19 +40,13 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 function validateSignUp(body: SignUpRequest) {
   const fieldErrors: Record<string, string> = {}
   if (!USERNAME.test(body.username)) {
-    fieldErrors.username =
-      'Use de 3 a 20 caracteres: letras minúsculas, números, ponto ou _.'
+    fieldErrors.username = USERNAME_FORMAT_MESSAGE
   } else if (RESERVED_USERNAMES.has(body.username)) {
     fieldErrors.username = 'Este nome de usuário é reservado.'
   }
   if (!EMAIL.test(body.email)) fieldErrors.email = 'Informe um e-mail válido.'
-  if (
-    body.password.length < 8 ||
-    !/[a-z]/i.test(body.password) ||
-    !/\d/.test(body.password)
-  ) {
-    fieldErrors.password =
-      'A senha precisa de ao menos 8 caracteres, com letras e números.'
+  if (!isStrongPassword(body.password)) {
+    fieldErrors.password = PASSWORD_RULE_MESSAGE
   }
   return fieldErrors
 }
@@ -115,6 +113,7 @@ export function createAuthHandlers(apiUrl: string, runtime: MockRuntime) {
         username: body.username,
         displayName: body.username,
         ensName: null,
+        walletNickname: null,
         avatarUrl: null,
         createdAt: now,
         updatedAt: now,

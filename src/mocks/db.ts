@@ -9,7 +9,7 @@ import type { WalletConnection } from '@/types/checkout'
 import type { Wallet } from '@/types/wallet'
 
 /** Mudar o formato do estado exige subir este número: o salvo antigo é descartado. */
-export const DB_SCHEMA_VERSION = 5
+export const DB_SCHEMA_VERSION = 6
 
 export interface CartRecord {
   items: Array<CartItem>
