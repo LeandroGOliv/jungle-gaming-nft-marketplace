@@ -4,9 +4,15 @@ import { MobileSearchBar } from '@/components/layout/mobile-search-bar'
 import { PageContainer } from '@/components/layout/page-container'
 import { NFT_CATEGORIES } from '@/types/nft'
 
-// Parâmetro inválido na URL é descartado em vez de quebrar a página.
+// Parâmetro inválido na URL é descartado em vez de quebrar a página. O router
+// faz JSON.parse dos valores, então `?busca=2024` digitado chega como número.
 const catalogSearchSchema = z.object({
-  busca: z.string().trim().min(1).optional().catch(undefined),
+  busca: z
+    .union([z.string(), z.number()])
+    .transform(String)
+    .pipe(z.string().trim().min(1))
+    .optional()
+    .catch(undefined),
   categoria: z.enum(NFT_CATEGORIES).optional().catch(undefined),
 })
 
@@ -23,8 +29,7 @@ function Home() {
   return (
     <PageContainer className="pt-10 md:pt-8">
       <MobileSearchBar
-        key={busca}
-        defaultValue={busca}
+        value={busca}
         className="md:hidden"
         onSearch={(term) =>
           void navigate({

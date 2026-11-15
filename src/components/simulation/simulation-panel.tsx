@@ -32,7 +32,7 @@ export function SimulationPanel() {
   const simulation = useSimulation()
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 md:px-8">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 md:px-8">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-text-primary">Simulação</h1>
         <p className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export function SimulationPanel() {
       ) : (
         <SimulationControls state={simulation.data} />
       )}
-    </main>
+    </div>
   )
 }
 
