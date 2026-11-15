@@ -120,6 +120,11 @@ export function createMockRuntime({
   bridgeStoreToRealtime(store, hub, () =>
     Date.parse(persisted.resetAt).toString(36),
   )
+  // O reset apaga as sessões: as conexões delas não podem seguir recebendo
+  // eventos privados.
+  store.subscribe((changes) => {
+    if (changes.some((c) => c.type === 'reset')) hub.revalidate()
+  })
 
   function applySettings(settings: SimulationSettings) {
     persisted = {
@@ -287,6 +292,7 @@ export function createMockRuntime({
     store.write((db) => {
       for (const session of db.sessions) session.expiresAt = now
     })
+    hub.revalidate()
   }
 
   function getState(): SimulationState {
@@ -335,6 +341,8 @@ export function createMockRuntime({
       update({ realtimeAvailable: available }),
     updateNft,
     emit: (event, payload) => hub.broadcast(event, payload),
+    emitToUser: (userId, event, payload) =>
+      hub.sendToUser(userId, event, payload),
     expireSessions,
     disconnectWallets,
     settleOrder: settle,
@@ -366,6 +374,15 @@ export function createMockRuntime({
     updateNft,
     networkHandler,
     realtimeHandler: hub.handler,
+    /** Outra aba gravou no storage compartilhado: adota o estado dela. */
+    syncFromStorage(key: string | null) {
+      if (key !== DB_KEY && key !== null) return
+      store.reload()
+      // Um logout na outra aba também encerra as conexões desta com o token.
+      hub.revalidate()
+    },
+    /** Depois de encerrar uma sessão: derruba as conexões abertas com ela. */
+    revalidateRealtime: () => hub.revalidate(),
   }
 }
 
