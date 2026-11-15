@@ -162,6 +162,9 @@ test.describe('login e cadastro', () => {
     await mocks.goto('/?auth=entrar')
     await signIn(page, NOVA)
 
+    // Sem tempo real: o servidor encerraria o socket da sessão vencida e a
+    // reconciliação já pediria login; aqui a expiração aparece na navegação.
+    await mocks.setRealtimeAvailable(false)
     await mocks.expireSessions()
     await page
       .getByRole('contentinfo')

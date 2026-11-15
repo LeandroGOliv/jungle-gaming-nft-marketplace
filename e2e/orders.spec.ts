@@ -15,7 +15,12 @@ async function signIn(page: Page, user = NOVA) {
   await dialog.getByLabel('E-mail').fill(user.email)
   await dialog.getByLabel('Senha', { exact: true }).fill(user.password)
   await dialog.getByRole('button', { name: 'Entrar', exact: true }).click()
-  await expect(dialog).toBeHidden()
+  // Só o formulário: o modal do pedido pode abrir logo em seguida.
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Entrar', exact: true }),
+  ).toHaveCount(0)
 }
 
 const providers = (page: Page) =>
