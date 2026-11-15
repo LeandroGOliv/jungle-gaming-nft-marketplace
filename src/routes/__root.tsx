@@ -5,6 +5,7 @@ import { AuthDialog } from '@/components/auth/auth-dialog'
 import { AppShell } from '@/components/layout/app-shell'
 import { NotFoundPage } from '@/components/layout/not-found-page'
 import { RealtimeProvider } from '@/components/layout/realtime-provider'
+import { RealtimeSync } from '@/components/layout/realtime-sync'
 import { AUTH_MODES, AUTH_REASONS } from '@/utils/auth-location'
 import { safeRedirect } from '@/utils/redirect'
 import type { RouterContext } from '@/router'
@@ -40,6 +41,7 @@ function RootComponent() {
   return (
     <RealtimeProvider>
       <AppShell>
+        <RealtimeSync />
         <Outlet />
         <AuthDialog />
       </AppShell>

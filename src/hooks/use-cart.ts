@@ -60,6 +60,12 @@ function useCartOwner(): CartOwner {
   return { kind: 'guest', guestCartId: guestId }
 }
 
+/** Chave do carrinho de quem está navegando; `null` enquanto a sessão resolve. */
+export function useCartKey() {
+  const owner = useCartOwner()
+  return owner.kind === 'pending' ? null : ownerKey(owner)
+}
+
 /**
  * Carrinho de quem está navegando. No primeiro carregamento após o login, a
  * consulta mescla o carrinho do visitante antes de devolver o do usuário; o
