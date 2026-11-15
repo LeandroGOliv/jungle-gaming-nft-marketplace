@@ -20,6 +20,7 @@ reveals a new one, add it.
 | `color/text-secondary`      | `#cfb28c` |
 | `color/foreground`          | `#f5f1eb` |
 | `color/background-elevated` | `#fbfbfb` |
+| `text/coral`                | `#f0805f` |
 
 A dark, warm-brown theme: `ink` is the darkest surface, text is cream.
 
@@ -37,6 +38,9 @@ in percent of the font size.
 | Heading/24 Bold                 |   24 |    700 | auto        | 0              |
 | Body Large/18 Bold · lh 24      |   18 |    700 | 24          | 0              |
 | Body Large/18 Bold · lh 16      |   18 |    700 | 16          | 0              |
+| Display/32 Bold                 |   32 |    700 | auto        | 10%            |
+| Title/20 Medium                 |   20 |    500 | 16          | 0              |
+| Title/20 Bold · lh 16           |   20 |    700 | 16          | 0              |
 | Body Large/18 Regular           |   18 |    400 | 16          | 0              |
 | Body Large/17 Bold              |   17 |    700 | 16          | 0              |
 | Body Large/16 Bold · lh 20      |   16 |    700 | 20          | 0              |
@@ -55,6 +59,8 @@ in percent of the font size.
 | Body/14 Regular · lh 24         |   14 |    400 | 24          | 0              |
 | Body/14 Regular · lh 22         |   14 |    400 | 22          | 0              |
 | Body/14 Regular · lh 16         |   14 |    400 | 16          | 0              |
+| Caption/13 Medium               |   13 |    500 | 16          | 0              |
+| Caption/13 Regular · lh 16      |   13 |    400 | 16          | 0              |
 | Caption/13 Regular · lh 22      |   13 |    400 | 22          | 0              |
 | Caption/12 Bold                 |   12 |    700 | 14          | 0              |
 | Tiny/10 Medium                  |   10 |    500 | auto        | 0              |
