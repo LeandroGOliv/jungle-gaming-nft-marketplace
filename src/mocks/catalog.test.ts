@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listNfts, parseNftListQuery } from './catalog'
+import { listNfts, parseNftListQuery, relatedNfts } from './catalog'
 import { nftFixtures } from './fixtures/nfts'
 import type { NftListQuery } from '@/types/nft'
 import { compareEth } from '@/utils/eth'
@@ -185,5 +185,23 @@ describe('listNfts', () => {
     const result = listNfts([], base)
     expect(result).toMatchObject({ items: [], total: 0, totalPages: 0 })
     expect(result.facets.priceRange).toEqual({ min: '0', max: '0' })
+  })
+})
+
+describe('relatedNfts', () => {
+  it('devolve até 5 NFTs da mesma coleção, sem o próprio, dos mais recentes', () => {
+    const source = nftFixtures[0]
+    const related = relatedNfts(nftFixtures, source.id)
+    expect(related).toHaveLength(5)
+    expect(related.map((n) => n.id)).not.toContain(source.id)
+    for (const nft of related) {
+      expect(nft.collection.id).toBe(source.collection.id)
+    }
+    const dates = related.map((n) => n.listedAt)
+    expect(dates).toEqual([...dates].sort().reverse())
+  })
+
+  it('devolve lista vazia para um NFT inexistente', () => {
+    expect(relatedNfts(nftFixtures, 'nao-existe')).toEqual([])
   })
 })

@@ -106,6 +106,28 @@ const SCENARIOS: Array<Scenario> = [
     realtimeAvailable: true,
     sessionTtlMs: 60_000,
   },
+  {
+    id: 'favorite-error',
+    label: 'Falha ao favoritar',
+    description:
+      'Fixtures completas; incluir ou remover favoritos responde 503, para exercitar o rollback da atualização otimista.',
+    latency: 'default',
+    faults: [
+      {
+        id: 'favorite-error-put',
+        method: 'PUT',
+        path: '/favorites/:nftId',
+        effect: { kind: 'http', status: 503 },
+      },
+      {
+        id: 'favorite-error-delete',
+        method: 'DELETE',
+        path: '/favorites/:nftId',
+        effect: { kind: 'http', status: 503 },
+      },
+    ],
+    realtimeAvailable: true,
+  },
 ]
 
 export const scenarioSummaries: Array<ScenarioSummary> = SCENARIOS.map(
