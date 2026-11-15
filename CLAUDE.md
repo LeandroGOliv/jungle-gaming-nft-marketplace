@@ -82,8 +82,10 @@ src/
   cancelled.
 - **URL is state** for catalogue search, filters, sort and pagination:
   validated search params on the route, filter changes reset the page.
-- **Routing groups**: `_authenticated` (guard redirects to login carrying the
-  return location), `_unauthenticated` (login/sign-up), `_public`.
+- **Routing groups**: `_authenticated` (guard opens the login over Início
+  carrying the return location) and `_public`. Login and sign-up are not
+  routes: a modal over the current screen, opened by the root search param
+  `?auth=entrar|cadastro` (with `motivo` and `redirect`).
 - **Forms**: `useForm` + `zodResolver`, fields through `<Controller>` into the
   shadcn primitives; API validation errors are mapped back onto the fields.
 - **Money**: ETH values are decimal **strings** end to end. Do arithmetic with
