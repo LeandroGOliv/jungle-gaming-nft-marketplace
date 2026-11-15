@@ -1,4 +1,7 @@
-import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import {
+  createRouter as createTanStackRouter,
+  stringifySearchWith,
+} from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 
@@ -14,6 +17,12 @@ export function getRouter(context: RouterContext) {
     defaultPreload: 'intent',
     // O cache é do TanStack Query; o router não mantém uma cópia própria.
     defaultPreloadStaleTime: 0,
+    // A URL guarda texto puro e os schemas das rotas convertem. O padrão poria
+    // aspas em `?precoMax="0.92"` e leria "0.92" (mas não "8.00") como número.
+    parseSearch: (search) => Object.fromEntries(new URLSearchParams(search)),
+    stringifySearch: stringifySearchWith((value) =>
+      typeof value === 'string' ? value : JSON.stringify(value),
+    ),
   })
 }
 

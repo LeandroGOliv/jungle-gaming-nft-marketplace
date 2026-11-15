@@ -18,7 +18,7 @@ test.describe('layout base', () => {
     await page.getByRole('link', { name: 'Voltar ao início' }).click()
     await expect(page).toHaveURL(/\/$/)
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Marketplace de NFTs' }),
+      page.getByRole('heading', { level: 1, name: /SEJA DONO D/ }),
     ).toBeVisible()
   })
 
@@ -134,7 +134,7 @@ test.describe('layout base', () => {
 
     await mocks.goto('/?categoria=banana')
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Marketplace de NFTs' }),
+      page.getByRole('heading', { level: 1, name: /SEJA DONO D/ }),
     ).toBeVisible()
 
     await mocks.goto('/em-breve?secao=banana')

@@ -1,7 +1,9 @@
 /** Valores em ETH trafegam como string decimal (ex.: `"1.19"`), nunca `number`. */
 export type EthAmount = string
 
-export type BlockchainNetwork = 'ethereum' | 'polygon'
+export const BLOCKCHAIN_NETWORKS = ['ethereum', 'polygon'] as const
+
+export type BlockchainNetwork = (typeof BLOCKCHAIN_NETWORKS)[number]
 
 export const NFT_CATEGORIES = [
   'art',
@@ -73,4 +75,47 @@ export interface Nft {
   updatedAt: string
   /** Cresce a cada alteração; eventos com versão menor ou igual são descartados. */
   version: number
+}
+
+/** Recorte das abas da Início: "Novos lançamentos" e "Em alta". */
+export const NFT_LIST_TABS = ['all', 'new', 'trending'] as const
+export type NftListTab = (typeof NFT_LIST_TABS)[number]
+
+export const NFT_LIST_SORTS = ['recent', 'price-asc', 'price-desc'] as const
+export type NftListSort = (typeof NFT_LIST_SORTS)[number]
+
+/** Query string de `GET /nfts`; os filtros ausentes não restringem. */
+export interface NftListQuery {
+  search?: string
+  category?: NftCategory
+  network?: BlockchainNetwork
+  minPrice?: EthAmount
+  maxPrice?: EthAmount
+  /** Só os destaques da curadoria (banner "NFT em destaque"). */
+  featured?: boolean
+  tab: NftListTab
+  sort: NftListSort
+  /** Começa em 1. */
+  page: number
+  pageSize: number
+}
+
+/**
+ * Contagens de cada opção de filtro, aplicando todos os outros filtros menos
+ * o da própria dimensão — o número mostra o que a escolha devolveria.
+ */
+export interface NftListFacets {
+  categories: Record<NftCategory, number>
+  networks: Record<BlockchainNetwork, number>
+  /** Menor e maior preço do catálogo inteiro: limites do slider. */
+  priceRange: { min: EthAmount; max: EthAmount }
+}
+
+export interface NftListResponse {
+  items: Array<Nft>
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+  facets: NftListFacets
 }

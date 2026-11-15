@@ -6,7 +6,7 @@ interface MobileSearchBarProps {
   /** Termo aplicado (vem da URL); o campo acompanha mudanças externas. */
   value?: string
   onSearch: (term: string) => void
-  /** Sem handler, o botão de filtros fica desabilitado. */
+  /** Sem handler, o botão de filtros não aparece (busca da sidebar desktop). */
   onOpenFilters?: () => void
   filtersExpanded?: boolean
   className?: string
@@ -60,26 +60,28 @@ export function MobileSearchBar({
           className="h-full flex-1 rounded-none border-0 bg-transparent py-0 text-sm leading-4 text-foreground focus-visible:ring-0 dark:bg-transparent pr-3 pl-0 font-bold"
         />
       </form>
-      <button
-        type="button"
-        aria-label="Filtros"
-        aria-expanded={onOpenFilters ? Boolean(filtersExpanded) : undefined}
-        disabled={!onOpenFilters}
-        onClick={onOpenFilters}
-        className="focus-ring grid size-[45px] shrink-0 place-items-center rounded-[14px] bg-[linear-gradient(137.05deg,rgba(210,138,76,0.45)_24.6%,var(--brand-primary)_100%)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <span aria-hidden="true" className="relative size-[22px]">
-          <span className="absolute inset-[19.46%_13.96%_14.14%_19.46%]">
-            <span className="absolute inset-[-5.14%_-5.12%_-5.13%_-5.12%]">
-              <img
-                src="/icons/filter.svg"
-                alt=""
-                className="block size-full max-w-none"
-              />
+      {onOpenFilters && (
+        <button
+          type="button"
+          aria-label="Filtros"
+          aria-expanded={Boolean(filtersExpanded)}
+          aria-haspopup="dialog"
+          onClick={onOpenFilters}
+          className="focus-ring grid size-[45px] shrink-0 place-items-center rounded-[14px] bg-[linear-gradient(137.05deg,rgba(210,138,76,0.45)_24.6%,var(--brand-primary)_100%)]"
+        >
+          <span aria-hidden="true" className="relative size-[22px]">
+            <span className="absolute inset-[19.46%_13.96%_14.14%_19.46%]">
+              <span className="absolute inset-[-5.14%_-5.12%_-5.13%_-5.12%]">
+                <img
+                  src="/icons/filter.svg"
+                  alt=""
+                  className="block size-full max-w-none"
+                />
+              </span>
             </span>
           </span>
-        </span>
-      </button>
+        </button>
+      )}
     </div>
   )
 }

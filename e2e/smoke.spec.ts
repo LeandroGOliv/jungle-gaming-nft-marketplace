@@ -4,7 +4,7 @@ test('carrega a página inicial com os mocks ativos', async ({ page }) => {
   await page.goto('/')
 
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Marketplace de NFTs' }),
+    page.getByRole('heading', { level: 1, name: /SEJA DONO D/ }),
   ).toBeVisible()
 
   const hasWorker = await page.evaluate(
