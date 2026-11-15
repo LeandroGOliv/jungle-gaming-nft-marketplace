@@ -290,11 +290,73 @@ Cliques seguidos geram mutations concorrentes. Só a última pendente escreve no
 - **Edição:** as pílulas formam um grupo de rádio. A primeira edição com unidades à venda vem selecionada; a esgotada fica desabilitada, riscada e é anunciada como "esgotada". Abaixo, uma linha mostra "N de M disponíveis" ou "Esta edição está esgotada".
 - **Quantidade:** inteira, de 1 ao disponível da edição selecionada, com os botões desabilitados nos limites. Volta a 1 ao trocar de edição e acompanha a disponibilidade se ela cair.
 - **Favoritar como visitante:** abre o login com `redirect` para o próprio detalhe. Depois de entrar, o colecionador volta ao detalhe, sem favoritar automaticamente.
-- **Compra:** "COMPRAR", "Comprar NFT" e o botão de carrinho ficam desabilitados até a issue do Carrinho ligar a inclusão. O ponto de integração é o `BuyButton` em `nft-detail-view.tsx`, que já recebe a edição e a quantidade selecionadas.
+- **Compra:** "COMPRAR" (desktop) e "Comprar NFT" (mobile) incluem a edição e a quantidade selecionadas no carrinho e levam até ele. O botão de carrinho do mobile inclui e fica no detalhe. Uma recusa da API (ex.: passar do disponível) aparece abaixo dos botões, sem sair da página.
 - **Avaliações:** a aba aparece como no Figma, mas desabilitada (`aria-disabled`), porque avaliações estão fora do escopo.
 - **Compartilhar:** LinkedIn, e-mail e X abrem os links de compartilhamento reais dessas redes em nova aba, com a URL do detalhe.
 - **Lupa:** amplia a imagem selecionada num diálogo.
 - **Estados:** skeleton com as dimensões finais (mobile e desktop), 404 próprio, erro com "Tentar novamente" e, com dados já na tela, um aviso de falha na atualização acima do conteúdo, com `aria-busy` durante a revalidação. Os relacionados têm skeleton, erro com nova tentativa e vazio próprios.
+
+## Carrinho
+
+### Estado: visitante e usuário
+
+O carrinho vive na API, nos dois casos; o navegador não guarda itens.
+
+- **Visitante:** a primeira inclusão cria um carrinho de visitante na API, que devolve o id em `guestCartId`. O cliente guarda só esse id opaco (`src/lib/guest-cart.ts`, `localStorage`) e o envia no header `X-Cart-Id`. É isso que mantém o carrinho após o refresh. Um id que a API não conhece mais (ex.: depois de restaurar o cenário) é tratado como "sem carrinho", e a próxima inclusão cria outro.
+- **Usuário:** com sessão, a API resolve o carrinho pelo token e ignora o `X-Cart-Id`.
+- **Ao autenticar:** a primeira consulta do carrinho com sessão chama `POST /cart/merge` com o id do visitante. Para o mesmo NFT e edição, as quantidades se somam até o limite disponível. O cupom do visitante, se houver, substitui o do usuário. A API apaga o carrinho do visitante, e só depois da resposta o cliente descarta o id. Assim, uma falha ou um refresh no meio só repetem a mescla, que é idempotente.
+- **No logout:** o carrinho da conta fica na conta (o cache privado é limpo), e o visitante recomeça com um carrinho vazio.
+
+O carrinho não exige login (`desafio.md` só exige autenticação para checkout, perfil, carteiras, favoritos e pedidos). O "Conectar e finalizar" leva a `/pagamento`, cujo guarda abre o login.
+
+### Cotação
+
+`GET /cart/quote` é a referência de valores: subtotal, desconto, taxa de rede, total, situação do cupom e itens com problema de disponibilidade. Ela é recalculada a cada chamada a partir do catálogo e dos cupons atuais, nunca do que o cliente enviou. A interface só exibe esses números. O total de cada linha (`lineTotalEth`) também vem da API.
+
+A cotação traz `cartVersion`, e a chave de cache inclui a versão do carrinho. Depois de qualquer alteração, a cotação da versão nova é buscada, e a anterior continua na tela, esmaecida e marcada como "Atualizando valores…" (`aria-busy`). O checkout só fica disponível com a cotação da versão exibida, sem problemas de disponibilidade.
+
+Valores em ETH são strings decimais de ponta a ponta. A aritmética (soma, subtração sem negativo, multiplicação por quantidade inteira, percentual arredondado para baixo no wei) fica em `src/utils/eth.ts`, em `bigint` sobre wei, com testes unitários. Os mocks usam as mesmas funções.
+
+### Contratos REST
+
+Todas as rotas usam `clientApi`: anexam a sessão quando há uma, e o visitante envia `X-Cart-Id`. Um token inválido responde 401, como em toda rota autenticada.
+
+| Método e caminho                       | Corpo                            | Resposta    | Erros                                                                                                                     |
+| -------------------------------------- | -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `GET /cart`                            | —                                | `Cart`      | 401                                                                                                                       |
+| `GET /cart/quote`                      | —                                | `CartQuote` | 401                                                                                                                       |
+| `POST /cart/items`                     | `{ nftId, editionId, quantity }` | `Cart`      | 404 `EDITION_NOT_FOUND`; 409 `CART_QUANTITY_UNAVAILABLE` (soma com o que já está no carrinho); 422 quantidade não inteira |
+| `PATCH /cart/items/:nftId/:editionId`  | `{ quantity }`                   | `Cart`      | 404 `CART_ITEM_NOT_FOUND`; 409 ao aumentar além do disponível (diminuir é sempre aceito); 422                             |
+| `DELETE /cart/items/:nftId/:editionId` | —                                | `Cart`      | 404 `CART_ITEM_NOT_FOUND`                                                                                                 |
+| `PUT /cart/coupon`                     | `{ code }`                       | `Cart`      | 422 `COUPON_INVALID`, `COUPON_EXPIRED` ou `COUPON_MIN_SUBTOTAL`, com `fieldErrors.code`                                   |
+| `DELETE /cart/coupon`                  | —                                | `Cart`      | —                                                                                                                         |
+| `POST /cart/merge`                     | — (`X-Cart-Id` do visitante)     | `Cart`      | 401 sem sessão                                                                                                            |
+
+`Cart` traz as linhas já com nome, token, edição, imagem, preço unitário, total da linha e unidades disponíveis, mais `itemCount` (soma das quantidades, o número do indicador) e `version`. Os tipos ficam em `src/types/cart.ts`.
+
+No store dos mocks, `carts` passou a guardar `{ items, couponCode, version }` por dono (id de usuário ou `guest_NNNN`), e o esquema subiu para a versão 3, o que descarta um estado salvo antes.
+
+**Cupons das fixtures** (`src/mocks/fixtures/coupons.ts`): `KURIO10` (10%), `GENESIS05` (0.05 ETH, a partir de 1 ETH de subtotal) e `VERAO25` (expirado). Qualquer outro código é inválido. Um cupom guardado é revalidado em cada cotação: se o subtotal cair abaixo do mínimo, o desconto zera e a mensagem explica por quê. A taxa de rede estimada é fixa em 0.016 ETH, e zero com o carrinho vazio.
+
+Os cenários do carrinho não precisam de configuração: cupom inválido e expirado vêm dos códigos acima, e o conflito de disponibilidade vem das edições com poucas unidades (ex.: Golden Beat #207, 1/10, com 2 unidades) ou de `__mocks.updateNft`, que reduz o disponível com o item no carrinho.
+
+### Cache
+
+- **Usuário:** `['user', userId, 'cart']`, sob a raiz privada que o login, o logout e a troca de usuário limpam.
+- **Visitante:** `['cart', 'guest', guestCartId | 'none']`.
+- **Cotação:** a chave do carrinho + `['quote', version]`, com `keepPreviousData`.
+
+As alterações não são otimistas: quantidade, inclusão e cupom dependem da disponibilidade e das regras da API. A linha alterada fica em `aria-busy`, com os controles desabilitados até a resposta, e o carrinho devolvido entra direto no cache. Um 409 também revalida o carrinho, porque o motivo costuma ser estoque que mudou.
+
+### Decisões de UX
+
+- **Indicador do header:** mostra a soma das quantidades ("Carrinho, 3 itens").
+- **Quantidade:** de 1 ao disponível da edição. Se a disponibilidade cair abaixo da quantidade, o "+" trava, a linha ganha um contorno coral com a explicação ("Só resta 1 unidade desta edição…"), e o checkout fica bloqueado até o ajuste.
+- **Cupom:** formulário com React Hook Form + Zod; os erros da API vão para o campo (`aria-invalid` e mensagem associada). Aplicado, o código aparece abaixo do campo com o desconto e um "Remover".
+- **Feedback:** inclusão, alteração, remoção e cupom são anunciados na região viva (`polite`); as falhas, na `assertive`.
+- **Estados:** skeleton do carrinho e do resumo com as dimensões finais, carrinho vazio com caminho para o mercado, erro com "Tentar novamente" (carrinho e cotação, separadamente), e atualização em segundo plano esmaecendo os valores.
+- **"Colecionadores também viram":** os 5 NFTs em alta do catálogo (`GET /nfts?tab=trending`), na mesma vitrine do detalhe (`NftShelf`).
+- **Fora do escopo desta issue:** refletir preço e disponibilidade recebidos por Socket.IO com o carrinho aberto (issue de Tempo real). Hoje a mudança aparece na próxima cotação.
 
 ## Desvios do Figma
 
@@ -331,8 +393,16 @@ Cliques seguidos geram mutations concorrentes. Só a última pendente escreve no
 | Detalhe: "Atributos"                      | Não há atributos na API. A linha mostra categoria e raridade (ex.: "Arte digital, Raro").                                                                                                                                                                                                         | Sem dado equivalente                                                                                            |
 | Detalhe: "Contrato" e "Direitos autorais" | No Figma os textos estão trocados ("Contrato:" traz os royalties e "Direitos autorais:" o endereço). Cada rótulo mostra o texto correspondente.                                                                                                                                                   | Coerência do conteúdo                                                                                           |
 | Detalhe: favoritado                       | O Figma só desenha o "Favoritar" vazio. Favoritado, o botão (e o círculo do hero mobile) fica preenchido em `primary` com o ícone em `ink`; o texto continua "Favoritar" e o estado vai em `aria-pressed`.                                                                                        | Estado não desenhado                                                                                            |
-| Detalhe: compra desabilitada              | Os botões de compra e o de carrinho aparecem com 50% de opacidade até o carrinho existir.                                                                                                                                                                                                         | Não simular uma ação fora do escopo                                                                             |
 | Detalhe: mobile                           | O frame mobile termina nos dados do token. Abaixo do sheet entram a descrição e "Mais desta coleção", e a barra de compra fica fixa no rodapé. O header do layout continua visível; a tab bar sai, como nas outras telas de compra. Os pontos do hero trocam a imagem (um por imagem da galeria). | Não perder conteúdo do desktop no mobile                                                                        |
 | Detalhe: tablet                           | Entre 768 e 1023 px, a galeria fica acima das informações, com a imagem principal fluida.                                                                                                                                                                                                         | Caber em 768 px                                                                                                 |
 | Detalhe: "Mais desta coleção"             | Os pontos do carrossel não aparecem: os 5 cards cabem numa linha no desktop. Abaixo de 1024 px a lista rola na horizontal.                                                                                                                                                                        | Sem páginas para navegar                                                                                        |
 | Detalhe: ícones                           | Ícones exportados do Figma em SVG (`public/icons/detail-*.svg`) e pintados como máscara. A estrela do selo mobile mantém o `#E3A44E` do Figma.                                                                                                                                                    | Mesmo asset nos estados ativo e inativo                                                                         |
+| Carrinho: edição na linha desktop         | A linha desktop mostra "ID do token: #0042 · 1/50". O Figma traz só o token; o mobile mostra a edição.                                                                                                                                                                                            | Duas edições do mesmo NFT seriam linhas idênticas                                                               |
+| Carrinho: desconto zero                   | O Figma escreve "(-) 00.00"; mostramos "(-) 0.00 ETH", no formato dos outros valores.                                                                                                                                                                                                             | Coerência dos valores em ETH                                                                                    |
+| Carrinho: remover no mobile               | No frame mobile a lixeira aparece só no item 3, sobreposta ao "+". Cada card tem a lixeira no canto superior direito.                                                                                                                                                                             | Deslize do frame; remover precisa existir em todos os itens                                                     |
+| Carrinho: nomes no mobile                 | Em 390 px o card tem 334 px (358 no frame de 414); nomes longos quebram em até duas linhas e o card cresce.                                                                                                                                                                                       | Não cortar o nome                                                                                               |
+| Carrinho: resumo mobile                   | O painel fica preso ao rodapé (`sticky`), como no Figma, e volta ao fluxo normal em telas com menos de 640 px de altura. O rótulo "Código promocional" e o título "Resumo da carteira" ficam visualmente ocultos no mobile, como no frame.                                                        | Não cobrir os itens com zoom ou em paisagem                                                                     |
+| Carrinho: tablet                          | Entre 768 e 1023 px a tabela ocupa a largura toda e o resumo vem abaixo. As colunas mantêm as proporções do Figma.                                                                                                                                                                                | Caber em 768 px                                                                                                 |
+| Carrinho: relacionados no mobile          | O frame mobile não tem "Colecionadores também viram"; a seção aparece a partir de 768 px.                                                                                                                                                                                                         | Seguir o frame mobile                                                                                           |
+| Carrinho: estados                         | Vazio, erro, problema de disponibilidade, cupom aplicado e "Atualizando valores…" não estão no Figma. Usam o card `surface-card`, o coral dos erros e o `text-secondary` do layout.                                                                                                               | Estados não desenhados                                                                                          |
+| Carrinho: lixeira                         | Ícone "Iconly/Curved/Delete" exportado em SVG (`public/icons/cart-delete.svg`) e pintado como máscara.                                                                                                                                                                                            | Mesmo asset nos estados normal e hover                                                                          |

@@ -103,6 +103,16 @@ curl -s -H "X-Figma-Token: $FIGMA_TOKEN" "https://api.figma.com/v1/images/$KEY?i
 Save the node JSON to `docs/figma/raw/<node-id>.json` and query it with
 `jq`/a script instead of printing it.
 
+## Fetching — browser Plugin API (last resort)
+
+When REST answers 429 (its `Retry-After` can be days) and the MCP quota is
+spent, open the working copy in Chrome (`claude-in-chrome`) and run the Plugin
+API from the page console: `await figma.getNodeByIdAsync(id)` exposes fills,
+strokes, radii, effects, auto layout and text styles, and
+`node.exportAsync({ format: 'SVG_STRING' })` exports icons. Tool output is
+truncated near 1000 characters, so build the dump into a `window` variable and
+read it in slices. Summarise it into the spec as usual.
+
 ## Translating to code
 
 - **Tokens** go into the Tailwind v4 `@theme` (and the shadcn CSS variables)
