@@ -34,7 +34,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Testes E2E
-        run: pnpm test:e2e
+        # As baselines visuais são do Windows; em Linux a renderização das fontes difere.
+        run: pnpm test:e2e --grep-invert @visual
 
       - name: Publicar relatório do Playwright
         if: ${{ !cancelled() }}

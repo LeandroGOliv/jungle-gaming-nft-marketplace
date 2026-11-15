@@ -143,9 +143,7 @@ test.describe('carrinho', () => {
       .click()
     await expect(
       page
-        .getByText(
-          /Só há 2 unidades disponíveis da edição 1\/10/,
-        )
+        .getByText(/Só há 2 unidades disponíveis da edição 1\/10/)
         .filter(visible)
         .first(),
     ).toBeVisible()
