@@ -1,3 +1,4 @@
+import { emptyCart } from './cart'
 import { DB_SCHEMA_VERSION } from './db'
 import { couponFixtures } from './fixtures/coupons'
 import { nftFixtures } from './fixtures/nfts'
@@ -51,7 +52,7 @@ const SCENARIOS: Array<Scenario> = [
     prepare: (db) => {
       db.nfts = []
       db.favorites = Object.fromEntries(db.users.map((u) => [u.id, []]))
-      db.carts = Object.fromEntries(db.users.map((u) => [u.id, []]))
+      db.carts = Object.fromEntries(db.users.map((u) => [u.id, emptyCart()]))
     },
   },
   {

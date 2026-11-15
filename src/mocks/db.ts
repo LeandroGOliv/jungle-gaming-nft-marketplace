@@ -8,7 +8,13 @@ import type { RealtimeResourceType } from '@/types/realtime'
 import type { Wallet } from '@/types/user'
 
 /** Mudar o formato do estado exige subir este número: o salvo antigo é descartado. */
-export const DB_SCHEMA_VERSION = 2
+export const DB_SCHEMA_VERSION = 3
+
+export interface CartRecord {
+  items: Array<CartItem>
+  couponCode: string | null
+  version: number
+}
 
 export interface SessionRecord {
   token: string
@@ -27,8 +33,8 @@ export interface MockDb {
   wallets: Record<string, Array<Wallet>>
   /** Ids de NFT por id de usuário. */
   favorites: Record<string, Array<string>>
-  /** Por dono do carrinho (id de usuário ou de visitante). */
-  carts: Record<string, Array<CartItem>>
+  /** Por dono do carrinho: id de usuário ou id de carrinho de visitante (`guest_*`). */
+  carts: Record<string, CartRecord>
   orders: Array<Order>
   coupons: Array<CouponRecord>
   /** Contador para ids gerados na simulação. */

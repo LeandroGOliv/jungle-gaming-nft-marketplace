@@ -1,5 +1,6 @@
 import type { PasswordCredential } from '../password'
-import type { CartItem, Order } from '@/types/order'
+import type { CartRecord } from '../db'
+import type { Order } from '@/types/order'
 import type { User, Wallet } from '@/types/user'
 
 export interface UserRecord extends User, PasswordCredential {}
@@ -80,9 +81,13 @@ export const favoriteFixtures: Record<string, Array<string>> = {
   usr_rafael: ['golden-beat-207', 'alabaster-duke-099'],
 }
 
-export const cartFixtures: Record<string, Array<CartItem>> = {
-  usr_nova: [],
-  usr_rafael: [{ nftId: 'golden-signal-160', editionId: 'ed-10', quantity: 1 }],
+export const cartFixtures: Record<string, CartRecord> = {
+  usr_nova: { items: [], couponCode: null, version: 1 },
+  usr_rafael: {
+    items: [{ nftId: 'golden-signal-160', editionId: 'ed-10', quantity: 1 }],
+    couponCode: null,
+    version: 1,
+  },
 }
 
 const NETWORK_FEE_ETH = '0.016'

@@ -1,4 +1,5 @@
 import { HttpResponse, http } from 'msw'
+import { emptyCart } from '../cart'
 import { apiErrorResponse } from '../errors'
 import { createSalt, hashPassword, verifyPassword } from '../password'
 import {
@@ -124,7 +125,7 @@ export function createAuthHandlers(apiUrl: string, runtime: MockRuntime) {
         db.users.push(user)
         db.wallets[user.id] = []
         db.favorites[user.id] = []
-        db.carts[user.id] = []
+        db.carts[user.id] = emptyCart()
       })
 
       return HttpResponse.json(openSession(user), { status: 201 })

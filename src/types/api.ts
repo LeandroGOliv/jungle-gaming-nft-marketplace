@@ -1,10 +1,11 @@
 import type { AuthErrorReason } from './auth'
+import type { CartErrorReason } from './cart'
 
 /**
  * Casos de negócio que o cliente distingue dentro de uma categoria de erro.
  * Cada fluxo acrescenta os seus (carrinho, checkout...).
  */
-export type ApiErrorReason = AuthErrorReason
+export type ApiErrorReason = AuthErrorReason | CartErrorReason
 
 /**
  * Corpo de toda resposta de erro da API. `code` é a categoria genérica,
