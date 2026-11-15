@@ -1,0 +1,235 @@
+{
+  "generatedAt": "2026-11-15T14:03:47.265Z",
+  "lighthouseVersion": "13.6.0",
+  "node": "v24.22.1",
+  "platform": "win32 x64",
+  "runsPerTarget": 3,
+  "conditions": "vite preview do build de produção em localhost, cenário padrão dos mocks, Chrome headless; mobile com a emulação e o throttling padrão do Lighthouse (Moto G Power, 4G lento, CPU 4x), desktop com --preset=desktop",
+  "results": [
+    {
+      "page": "inicio",
+      "profile": "mobile",
+      "scores": {
+        "performance": 79,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "LCP": 4500.782,
+        "CLS": 0.01585482594739959,
+        "TBT": 152.83182499999975
+      },
+      "runs": [
+        {
+          "scores": {
+            "performance": 78,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4489.24725,
+            "CLS": 0.01585482594739959,
+            "TBT": 168
+          }
+        },
+        {
+          "scores": {
+            "performance": 79,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4514.318249999998,
+            "CLS": 0,
+            "TBT": 152.83182499999975
+          }
+        },
+        {
+          "scores": {
+            "performance": 79,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4500.782,
+            "CLS": 0.01585482594739959,
+            "TBT": 136.47820000000002
+          }
+        }
+      ]
+    },
+    {
+      "page": "inicio",
+      "profile": "desktop",
+      "scores": {
+        "performance": 98,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "LCP": 1120.4052500000003,
+        "CLS": 0.001552875033240484,
+        "TBT": 0
+      },
+      "runs": [
+        {
+          "scores": {
+            "performance": 96,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1359.5082499999999,
+            "CLS": 0.001552875033240484,
+            "TBT": 0
+          }
+        },
+        {
+          "scores": {
+            "performance": 98,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1120.4052500000003,
+            "CLS": 0.001552875033240484,
+            "TBT": 0
+          }
+        },
+        {
+          "scores": {
+            "performance": 98,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1089.2367500000005,
+            "CLS": 0.001552875033240484,
+            "TBT": 0
+          }
+        }
+      ]
+    },
+    {
+      "page": "detalhe",
+      "profile": "mobile",
+      "scores": {
+        "performance": 82,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "LCP": 4725.79375,
+        "CLS": 0,
+        "TBT": 100
+      },
+      "runs": [
+        {
+          "scores": {
+            "performance": 82,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4680.315749999999,
+            "CLS": 0,
+            "TBT": 114.5
+          }
+        },
+        {
+          "scores": {
+            "performance": 82,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4730.144250000001,
+            "CLS": 0,
+            "TBT": 100
+          }
+        },
+        {
+          "scores": {
+            "performance": 83,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 4725.79375,
+            "CLS": 0,
+            "TBT": 84
+          }
+        }
+      ]
+    },
+    {
+      "page": "detalhe",
+      "profile": "desktop",
+      "scores": {
+        "performance": 97,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "LCP": 1270.97275,
+        "CLS": 0.0001252612231960826,
+        "TBT": 0
+      },
+      "runs": [
+        {
+          "scores": {
+            "performance": 97,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1270.97275,
+            "CLS": 0.0001252612231960826,
+            "TBT": 0
+          }
+        },
+        {
+          "scores": {
+            "performance": 97,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1275.8742499999998,
+            "CLS": 0.0001252612231960826,
+            "TBT": 0
+          }
+        },
+        {
+          "scores": {
+            "performance": 97,
+            "accessibility": 100,
+            "best-practices": 100,
+            "seo": 100
+          },
+          "metrics": {
+            "LCP": 1261.41875,
+            "CLS": 0.0001252612231960826,
+            "TBT": 0
+          }
+        }
+      ]
+    }
+  ],
+  "chromeVersion": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36"
+}

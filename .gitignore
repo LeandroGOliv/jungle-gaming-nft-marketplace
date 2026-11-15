@@ -27,3 +27,6 @@ Thumbs.db
 
 # Configurações locais do Claude Code
 .claude/settings.local.json
+
+# Medições brutas do Lighthouse (a mediana vai para docs/lighthouse)
+lighthouse-reports
