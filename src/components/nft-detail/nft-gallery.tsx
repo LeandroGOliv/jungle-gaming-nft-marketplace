@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { MaskIcon } from '@/components/layout/mask-icon'
 import {
   Dialog,
@@ -24,6 +24,7 @@ export function NftGallery({
   onSelect,
 }: GalleryProps) {
   const [zoomOpen, setZoomOpen] = useState(false)
+  const zoomButton = useRef<HTMLButtonElement>(null)
   const image = images[selected] ?? images[0]
 
   return (
@@ -66,6 +67,7 @@ export function NftGallery({
           className="size-full rounded-3xl object-cover"
         />
         <button
+          ref={zoomButton}
           type="button"
           onClick={() => setZoomOpen(true)}
           aria-label="Ampliar imagem"
@@ -76,7 +78,14 @@ export function NftGallery({
       </div>
 
       <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
-        <DialogContent className="p-3 sm:max-w-[min(90vw,800px)]">
+        <DialogContent
+          className="p-3 sm:max-w-[min(90vw,800px)]"
+          // Sem DialogTrigger o Radix não sabe quem abriu: o foco iria ao <body>.
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            zoomButton.current?.focus()
+          }}
+        >
           <DialogTitle className="sr-only">{nftName}</DialogTitle>
           <DialogDescription className="sr-only">{image.alt}</DialogDescription>
           <img
@@ -115,7 +124,7 @@ export function NftHeroImage({
         <div
           role="group"
           aria-label={`Imagens de ${nftName}`}
-          className="absolute inset-x-0 bottom-[50px] flex justify-center gap-[7px]"
+          className="absolute inset-x-0 bottom-[42px] flex justify-center"
         >
           {images.map((thumb, index) => (
             <button
@@ -124,8 +133,9 @@ export function NftHeroImage({
               onClick={() => onSelect(index)}
               aria-current={index === selected}
               aria-label={`Mostrar imagem ${index + 1} de ${images.length}`}
-              // Área de toque maior que o ponto de 7 px do Figma.
-              className="focus-ring -m-2 flex cursor-pointer items-center justify-center rounded-full p-2"
+              // Área de toque de 24 px sem sobreposição (WCAG 2.5.8): os pontos
+              // ficam mais espaçados que os 7 px do Figma.
+              className="focus-ring flex h-6 min-w-6 cursor-pointer items-center justify-center rounded-full"
             >
               <span
                 className={cn(

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import {
   Link,
   Navigate,
@@ -20,13 +20,27 @@ import { redirectOwner } from '@/lib/redirect-owner'
 import { cn } from '@/lib/utils'
 import { withoutAuthParams } from '@/utils/auth-location'
 import { returnAfterLogin } from '@/utils/redirect'
-import { LoginForm } from './login-form'
-import { SignUpForm } from './sign-up-form'
 import { SocialSignIn } from './social-sign-in'
 import type { AuthSession } from '@/types/auth'
 import type { AuthParams } from '@/utils/auth-location'
 
 type Mode = NonNullable<AuthParams['auth']>
+
+// Os formulários trazem React Hook Form e os schemas, que a primeira tela não
+// usa: ficam fora do chunk de entrada e são baixados quando o navegador fica ocioso.
+const loadLoginForm = () => import('./login-form')
+const loadSignUpForm = () => import('./sign-up-form')
+const LoginForm = lazy(() =>
+  loadLoginForm().then((m) => ({ default: m.LoginForm })),
+)
+const SignUpForm = lazy(() =>
+  loadSignUpForm().then((m) => ({ default: m.SignUpForm })),
+)
+
+function preloadForms() {
+  void loadLoginForm()
+  void loadSignUpForm()
+}
 
 const COPY = {
   entrar: {
@@ -62,6 +76,15 @@ export function AuthDialog() {
   const href = useLocation({ select: (location) => location.href })
   const session = useSession()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!('requestIdleCallback' in window)) {
+      const timer = setTimeout(preloadForms, 2000)
+      return () => clearTimeout(timer)
+    }
+    const handle = requestIdleCallback(preloadForms, { timeout: 4000 })
+    return () => cancelIdleCallback(handle)
+  }, [])
 
   if (auth && session.status === 'authenticated') {
     return (
@@ -157,13 +180,12 @@ function AuthDialogContent({ mode, motivo }: AuthDialogContentProps) {
       onOpenAutoFocus={(event) => {
         returnFocus.current = document.activeElement as HTMLElement | null
         // O foco começa no primeiro campo, não nas abas nem no "X".
-        const field = (
-          event.currentTarget as HTMLElement | null
-        )?.querySelector('form input')
-        if (field instanceof HTMLElement) {
-          event.preventDefault()
-          field.focus()
-        }
+        // Sem o formulário ainda carregado, segura o foco no modal até ele chegar.
+        const content = event.currentTarget as HTMLElement | null
+        const field = content?.querySelector('form input')
+        event.preventDefault()
+        if (field instanceof HTMLElement) field.focus()
+        else content?.focus()
       }}
       onCloseAutoFocus={(event) => {
         // O foco volta a quem abriu o modal; se ele sumiu (o "Entrar" vira
@@ -225,11 +247,21 @@ function AuthDialogContent({ mode, motivo }: AuthDialogContentProps) {
         </p>
       )}
 
-      {mode === 'entrar' ? (
-        <LoginForm onSuccess={handleSuccess} onUnavailable={setUnavailable} />
-      ) : (
-        <SignUpForm onSuccess={handleSuccess} />
-      )}
+      <Suspense
+        fallback={
+          <div
+            aria-hidden="true"
+            className={mode === 'entrar' ? 'min-h-[236px]' : 'min-h-[332px]'}
+          />
+        }
+      >
+        {mode === 'entrar' ? (
+          <LoginForm onSuccess={handleSuccess} onUnavailable={setUnavailable} />
+        ) : (
+          <SignUpForm onSuccess={handleSuccess} />
+        )}
+        <FocusFirstField />
+      </Suspense>
 
       <div className="flex flex-col md:pt-6 md:pb-6">
         <SocialSignIn
@@ -269,6 +301,20 @@ function AuthDialogContent({ mode, motivo }: AuthDialogContentProps) {
       </DialogClose>
     </DialogContent>
   )
+}
+
+/**
+ * Aberto pela URL antes de o formulário chegar, o foco inicial fica no modal;
+ * quando o formulário monta, ele segue para o primeiro campo.
+ */
+function FocusFirstField() {
+  const marker = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const dialog = marker.current?.closest('[role="dialog"]')
+    if (!dialog || document.activeElement !== dialog) return
+    dialog.querySelector<HTMLElement>('form input')?.focus()
+  }, [])
+  return <span ref={marker} hidden />
 }
 
 /** "Entrar | Criar conta" do modal desktop: troca o formulário pela URL. */

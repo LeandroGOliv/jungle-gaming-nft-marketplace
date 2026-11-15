@@ -45,6 +45,7 @@ export function CatalogSection({
   filtersOpen,
   onFiltersOpenChange: setFiltersOpen,
 }: CatalogSectionProps) {
+  const filtersOpener = useRef<HTMLElement | null>(null)
   const query = toNftListQuery(search)
   const list = useNftList(query)
   const facets = list.data?.facets
@@ -201,6 +202,18 @@ export function CatalogSection({
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
         <SheetContent
+          // Aberta por gatilhos fora de um SheetTrigger (busca mobile e botão
+          // do tablet): o Radix não saberia a quem devolver o foco.
+          onOpenAutoFocus={() => {
+            filtersOpener.current = document.activeElement as HTMLElement | null
+          }}
+          onCloseAutoFocus={(event) => {
+            const opener = filtersOpener.current
+            if (opener?.isConnected && opener !== document.body) {
+              event.preventDefault()
+              opener.focus()
+            }
+          }}
           side="bottom"
           className="max-h-[85dvh] gap-0 overflow-y-auto rounded-t-[20px] border-border bg-card"
         >
