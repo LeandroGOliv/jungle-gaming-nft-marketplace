@@ -112,6 +112,7 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 | `flaky`          | As 3 primeiras chamadas respondem 503 (tentativa + 2 repetições); depois funciona |
 | `short-session`  | Fixtures completas; a sessão expira 1 minuto após o login                         |
 | `favorite-error` | Fixtures completas; incluir ou remover favoritos responde 503                     |
+| `wallet-error`   | Fixtures completas; o primeiro cadastro ou edição de carteira responde 503        |
 
 | Latência       | Comportamento                                                                |
 | -------------- | ---------------------------------------------------------------------------- |
@@ -130,6 +131,7 @@ Trocar de cenário ou restaurar os dados volta integralmente ao estado inicial d
 - **Queda do tempo real**: em `/simulacao`, "Derrubar conexões" e depois "Restabelecer conexões".
 - **Falha ao favoritar**: aplique `favorite-error`, entre e clique em "Favoritar" no detalhe de um NFT. O coração muda na hora, volta ao estado anterior quando a API recusa e o erro é anunciado. Volte ao cenário `default` para a mesma ação funcionar.
 - **Sessão expirada durante a navegação**: entre, abra `/simulacao` e use "Expirar sessões" (ou aplique `short-session` e espere 1 minuto). A próxima tela privada, ou a volta à aba, pede login de novo com o aviso de sessão expirada, e depois do login o colecionador volta à tela em que estava.
+- **Erros ao salvar carteira**: entre e abra `/carteiras`. Em "Editar", um código de indicação diferente de `KURIO2026`, `GREENMINT` ou `SELVA10`, ou o endereço da outra carteira, volta como erro da API no próprio campo. Com o cenário `wallet-error`, o primeiro "Salvar carteira" falha com 503 e o seguinte funciona.
 - **Conflito de cadastro**: crie uma conta com `nova@colecionador.test` ou com o usuário `novasato`; o erro aparece no próprio campo.
 - **Login social e recuperação de senha**: os botões avisam que não estão disponíveis, sem simular sucesso.
 
